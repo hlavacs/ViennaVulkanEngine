@@ -300,10 +300,11 @@ int main(int argc, char **argv) try {
 	std::filesystem::create_directories(output);
 	std::println("oracle=analytic-polygon-pixel-intersection edge.ratio.limit={} edge.mae.limit={} interior.limit={} coverage.limit={}", maxEdgeRatio, maxEdgeError, maxInteriorError, maxCoverageError);
 	for (const auto backend : {RendererBackend::forward, RendererBackend::deferred, RendererBackend::hybrid_gi}) {
+		if (backend == RendererBackend::hybrid_gi && vve::engineImplementationNamespaceName == "simple") { continue; }
 		for (const bool native : {false, true}) {
 			if (unsupported && native) { continue; }
 			std::vector<unsigned char> sheet(side * 4 * side * 8 * 3);
-			if (unsupported) {
+			if (unsupported && vve::engineImplementationNamespaceName != "simple") {
 				// Both four-sample selections use the real Profiles-layer rejection and retain their exact startup mode.
 				(void)run(backend, Antialiasing::msaa4_smaa, false, true, sheet);
 			}

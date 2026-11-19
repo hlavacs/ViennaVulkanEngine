@@ -30,7 +30,8 @@ export namespace vve {
 		missing_component,												///< Component was required but not found.
 		platform_error,													///< Platform API returned an error.
 		asset_import_failed,											///< Asset import pipeline failed.
-		capacity_exceeded												///< A fixed-size engine table is full.
+		capacity_exceeded,												///< A fixed-size engine table is full.
+		unsupported_feature ///< Recognized request not provided by the selected implementation.
 	};
 
 	[[nodiscard]] inline auto errorName(Error error)	-> std::string_view{
@@ -48,6 +49,7 @@ export namespace vve {
 				{Error::platform_error, "platform_error"},
 				{Error::asset_import_failed, "asset_import_failed"},
 				{Error::capacity_exceeded, "capacity_exceeded"},
+				{Error::unsupported_feature, "unsupported_feature"},
 		};
 		return detail::mapValueOr(names, error, std::string_view{"unknown_error"});
 	}

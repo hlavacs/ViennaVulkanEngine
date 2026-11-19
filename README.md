@@ -154,7 +154,12 @@ cmake --preset release-windows -B build/release-windows -DVVE_ENGINE_IMPLEMENTAT
 cmake --build build/release-windows
 ```
 
-On Linux or macOS, use the matching host preset with the same cache variable. Examples and tests follow the selected engine. Both implementations register the same tests on a given platform and configuration, including renderer and image-quality tests. The white-box tests use build-local sources with implementation references switched to the selected engine; fixtures and assertions are shared.
+On Linux or macOS, use the matching host preset with the same cache variable.
+The [Simple engine teaching guide](docs/simple-engine.md) traces a frame through
+forward Blinn-Phong or deferred PBR. Both engines run the game, Racer and Island
+Delivery examples and share the applicable facade, shadow, MSAA and rendering
+tests. Complex additionally runs the full hybrid GI, SMAA and tone-mapping
+suites; Simple tests that unsupported feature requests are rejected.
 
 Link applications to `ViennaVulkanEngine::ViennaVulkanEngine`; it supplies the ImGui and SDL3 headers and compile settings. The engine owns their runtime linkage. Adding their static archives directly to an executable can create separate ImGui contexts and SDL window registries beside the shared engine. Windows static-engine builds propagate these dependencies through CMake automatically.
 

@@ -112,7 +112,7 @@ namespace vve::simple {
 		return {};
 	}
 	/// @brief Explicit external edits affect captures and caster depth, never per-frame engine uploads.
-	void ForwardRenderer::notifyNativeDrawChanged() { invalidateProbes(false,true); }
+	void ForwardRenderer::notifyNativeDrawChanged() {} // Native commands are recorded every frame.
 
 	/// @brief Completes the public per-pass context; failures abort recording through the existing acquired-image cleanup.
 	VkResult ForwardRenderer::recordNative(WindowTarget &target, VkCommandBuffer command, NativeDrawContext context) {
@@ -125,25 +125,17 @@ namespace vve::simple {
 		context.frustum = frustumPlanes(context.viewProjection);
 		context.eye = Position{Vec3{inverse(context.view)[3]}};
 		context.depthFormat = depthFormat;
-		const bool single = context.pass == NativeDrawPass::shadow || context.pass == NativeDrawPass::probe_capture;
+		const bool single = context.pass == NativeDrawPass::shadow;
 		context.samples = single ? VK_SAMPLE_COUNT_1_BIT : sampleCount();
 		context.colorAttachmentCount = context.pass == NativeDrawPass::shadow ? 0U : context.pass == NativeDrawPass::gbuffer ? 3U : 1U;
 		for (auto i : std::views::iota(0U,context.colorAttachmentCount)) { context.colorFormats[i] = gbufferFormats[i]; }
 		context.samplerAnisotropy = device.samplerAnisotropy; context.tessellationShader = device.tessellationShader;
 		if (!context.width) { context.width = target.swapchain.extent.width; context.height = target.swapchain.extent.height; }
-		// The public sampler borrows only coefficient views, never G-buffer or depth attachments being written.
-		if (backend_ == RendererBackend::hybrid_gi &&
-			(context.prepare || context.pass == NativeDrawPass::forward_opaque || context.pass == NativeDrawPass::forward_transparent)) {
-			context.probeIrradianceViews = {reinterpret_cast<std::uint64_t>(target.probes.coefficients.imageView),reinterpret_cast<std::uint64_t>(target.coarseProbes.coefficients.imageView)};
-			context.probeOrigin = frameUniforms_.probeOrigin; context.probeControl = frameUniforms_.probeControl;
-			context.probeEye = (target.camera ? *target.camera : camera_).position;
-			context.probeCascades = static_cast<std::uint32_t>(frameUniforms_.viewport.w);
-		}
 		// Preparation may bind these immutable views after its slot fence; only later colour/capture scopes sample them.
 		context.mainView = frameUniforms_.view;
 		context.sunShadowView = reinterpret_cast<std::uint64_t>(dirShadowArray.imageView);
 		context.sunShadowTexels = Vec4{dirShadowArray.extent.width ? 1.F/dirShadowArray.extent.width : 0.F,dirShadowArray.extent.height ? 1.F/dirShadowArray.extent.height : 0.F,
-			target.probeShadow.extent.width ? 1.F/target.probeShadow.extent.width : 0.F,target.probeShadow.extent.height ? 1.F/target.probeShadow.extent.height : 0.F};
+			0.F, 0.F};
 		for (std::uint32_t sun = 0; sun < frameUniforms_.activeDirectionalLightCount; ++sun) {
 			if (frameUniforms_.directionalLightDirections[sun].w != zero()) { continue; }
 			context.sunShadowCount = 4; context.sunShadowFirstLayer = sun * kNumShadowCascades;
@@ -151,9 +143,6 @@ namespace vve::simple {
 			for (std::uint32_t i = 0; i < 4; ++i) { context.sunShadowMatrices[i] = frameUniforms_.shadowViewProjs[kShadowMatrixDirBase + context.sunShadowFirstLayer + i]; }
 			break;
 		}
-		context.captureSunShadowView = reinterpret_cast<std::uint64_t>(target.probeShadow.imageView);
-		context.captureSunShadowMatrix = target.probeShadowMatrix;
-		context.captureSunShadowEnabled = target.probeSun >= 0;
 		try {
 			if (const auto result = nativeDraw_(context); !result) {
 				std::cerr << "[vve::simple] native draw: " << errorName(result.error()) << '\n';
@@ -197,10 +186,6 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return reportFrameFailure("fence wait", result); }
 		collectRetiredResources(target.submitSerials[frameIndex]);
 		collectGpuTiming(target, frameIndex);
-		result = prepareSmaa(target);
-		if (result != VK_SUCCESS) { return reportFrameFailure("SMAA resources", result); }
-		result = prepareToneMap(target);
-		if (result != VK_SUCCESS) { return reportFrameFailure("tone mapping resources", result); }
 		result = prepareGpuTiming(target);
 		if (result != VK_SUCCESS) { return reportFrameFailure("GPU timing queries", result); }
 		if (const VkResult sync = syncSceneResources(); sync != VK_SUCCESS) { return reportFrameFailure("scene sync", sync); }
@@ -242,10 +227,6 @@ namespace vve::simple {
 			frameUniforms_.skyParams = {sky_.haze, sun == lights.end() ? zero() : sky_.sun_size * 0.00465F, static_cast<float>(sun - lights.begin()), 0};
 			frameUniforms_.cloudLayer = {sky_.cloud_base, sky_.cloud_thickness, sky_.cloud_coverage, sky_.cloud_density * 0.04F};
 			frameUniforms_.cloudWind = {drift(sky_.wind.x), drift(sky_.wind.y), 0, 0};
-		}
-		if (backend_ == RendererBackend::hybrid_gi) {
-			result = prepareProbes(target, frameIndex);
-			if (result != VK_SUCCESS) { return reportFrameFailure("probe preparation", result); }
 		}
 		result = target.uniformBuffers.update(target.currentFrame, frameUniforms_);
 		if (result != VK_SUCCESS) { return reportFrameFailure("uniform update", result); }
@@ -291,8 +272,7 @@ namespace vve::simple {
 		result = vkResetFences(device.device, 1U, &inFlightFence);
 		if (result != VK_SUCCESS) { return abandonAcquiredImage("fence reset", result); }
 
-		const VkPipelineStageFlags waitStage{static_cast<VkPipelineStageFlags>(
-			toneMapping_.op == ToneMappingOperator::none && !smaaEnabled() ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)}; ///< Wait at the actual first swapchain use: legacy transfer or opt-in attachment output.
+		const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_TRANSFER_BIT};
 		const VkCommandBuffer commandBuffer{target.commandBuffers.ownedCommandBuffers[target.currentFrame]}; // Borrow from the frame slot owner for submission.
 		const VkSubmitInfo submitInfo{
 			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -307,10 +287,9 @@ namespace vve::simple {
 		result = vkQueueSubmit(device.graphicsQueue, 1U, &submitInfo, inFlightFence);
 		if (result != VK_SUCCESS) { return abandonAcquiredImage("queue submit", result, inFlightFence); }
 		target.submitSerials[frameIndex] = ++submitSerial_;
-		if (debugOutputReadback) { outputDiagnostics.back().serial = submitSerial_; }
 		if (gpuTimingEnabled && target.gpuQueries) target.timingWritten[frameIndex].set(WindowTarget::timingQueries - 1);
 		if (submitSerial_ == 1U) {
-			std::clog << "[vve::simple] renderer=" << std::array{"forward", "deferred", "hybrid-gi"}[std::to_underlying(backend_)]
+			std::clog << "[vve::simple] renderer=" << std::array{"forward", "deferred"}[std::to_underlying(backend_)]
 				<< " gbuffer=" << std::ranges::count(recordedPassOrder, RecordedPass::gbuffer)
 				<< " deferred_lighting=" << std::ranges::count(recordedPassOrder, RecordedPass::deferred_lighting)
 				<< " samples=" << static_cast<unsigned>(sampleCount()) << '\n';
@@ -380,7 +359,7 @@ namespace vve::simple {
 		if (gpuTimingEnabled && target.gpuQueries) {
 			target.timingWritten[frameIndex].reset();
 			vkCmdResetQueryPool(commandBuffer, target.gpuQueries, frameIndex * WindowTarget::timingQueries, WindowTarget::timingQueries);
-			writeGpuTimestamp(target, commandBuffer, 16);
+			writeGpuTimestamp(target, commandBuffer, 2);
 		}
 		const NativeDrawContext mainContext{.pass = usesDeferred() ? NativeDrawPass::gbuffer : NativeDrawPass::forward_opaque,
 			.view = frameUniforms_.view,.projection = frameUniforms_.projection};
@@ -448,16 +427,15 @@ namespace vve::simple {
 			const auto planes = frustumPlanes(clip);
 			bool blending{}; // The colour pass switches to the blended pipeline at the first transparent item.
 			// Callers bind the pass pipeline; terrain items switch to its tessellated twin and back.
-			const VkPipeline passPipeline = shadowPass ? shadowPipeline.pipeline : scenePass == RecordedPass::gbuffer ? gbufferPipeline.pipeline : scenePass == RecordedPass::probe_capture ? probePipeline.pipeline : graphicsPipeline.pipeline;
+			const VkPipeline passPipeline = shadowPass ? shadowPipeline.pipeline : scenePass == RecordedPass::gbuffer ? gbufferPipeline.pipeline : graphicsPipeline.pipeline;
 			const VkPipeline terrainPassPipeline = shadowPass ? terrainShadowPipeline.pipeline
-				: scenePass == RecordedPass::gbuffer ? terrainGbufferPipeline.pipeline : scenePass == RecordedPass::probe_capture ? probeTerrainPipeline.pipeline : terrainPipeline.pipeline;
+				: scenePass == RecordedPass::gbuffer ? terrainGbufferPipeline.pipeline : terrainPipeline.pipeline;
 			bool terrainBound{};
 			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
 			for (const auto &item : items) {
 				const bool opaque = !item.sky && !item.transparent;
 				if (opaqueOnly && !opaque) { continue; }
-				// Probe faces keep the shared sky draw after opaque geometry; only forward-only surfaces are excluded.
-				if (!shadowPass && ((scenePass == RecordedPass::gbuffer && !opaque) || (scenePass == RecordedPass::probe_capture && item.transparent) ||
+				if (!shadowPass && ((scenePass == RecordedPass::gbuffer && !opaque) ||
 					(scenePass == RecordedPass::forward_transparency && opaque))) { continue; }
 				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
 				if (item.terrain && terrainPassPipeline == VK_NULL_HANDLE) {
@@ -474,11 +452,6 @@ namespace vve::simple {
 				}
 				if (!shadowPass && item.transparent && !blending) {
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPipeline.pipeline);
-					if (backend_ == RendererBackend::hybrid_gi) {
-						// Only shared probe coefficients are sampled here; transparency never samples opaque AO or depth descriptors.
-						const std::array sets{target.descriptorSets.descriptorSets[frameIndex], target.deferredSet};
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deferredPipelineLayout.pipelineLayout, 0, 2, sets.data(), 0, nullptr);
-					}
 					++lastFrameDrawStats_.pipelineBinds;
 					blending = true;
 				}
@@ -508,7 +481,7 @@ namespace vve::simple {
 			VkDescriptorSet captureSet = VK_NULL_HANDLE, bool initialized = true, bool draw = true) -> VkResult {
 			debugLabels.begin(commandBuffer, label, DebugLabelKind::shadow);
 			// One shadow pipeline/set and viewport serve every light type and layer.
-			if (!shadowPipelineBound || pass == RecordedPass::probe_shadow) {
+			if (!shadowPipelineBound) {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline.pipeline);
 				++lastFrameDrawStats_.pipelineBinds;
 				const VkViewport viewport{.width = static_cast<float>(map.extent.width), .height = static_cast<float>(map.extent.height), .minDepth = 0.0F, .maxDepth = 1.0F};
@@ -552,20 +525,14 @@ namespace vve::simple {
 			vkCmdBeginRendering(commandBuffer, &renderingInfo);
 			++lastShadowLayerPassCount_;
 			recordedPassOrder.push_back(pass);
-			if (draw) drawUploadedObjects(matrixIndex, true, pass == RecordedPass::probe_shadow ? target.probeShadowMatrix : frameUniforms_.shadowViewProjs[matrixIndex]);
+			if (draw) drawUploadedObjects(matrixIndex, true, frameUniforms_.shadowViewProjs[matrixIndex]);
 			if (draw && nativeDraw_) {
 				NativeDrawContext context{.pass = NativeDrawPass::shadow,.width = map.extent.width,.height = map.extent.height};
-				context.probeShadow = pass == RecordedPass::probe_shadow;
-				if (context.probeShadow) {
-					context.view = target.probeShadowView; context.projection = target.probeShadowProjection;
-					context.lightType = 3; context.lightIndex = static_cast<std::uint32_t>(target.probeSun);
-				} else {
 					context.lightType = pass == RecordedPass::directional_shadow ? 3U : pass == RecordedPass::point_shadow ? 2U : 1U;
 					const auto meta = std::ranges::find_if(shadowLightMeta,[&](const auto &m) { return m.light_type == context.lightType && m.first_layer == layer; });
 					if (meta != shadowLightMeta.end()) { context.view = meta->view; context.projection = meta->projection; context.lightIndex = meta->light_index; }
 					context.cascadeIndex = context.lightType == 3 ? layer % kNumShadowCascades : 0U;
 					context.faceIndex = context.lightType == 2 ? layer % pointShadowFaceCount : 0U;
-				}
 				const auto r = recordNative(target,commandBuffer,context);
 				boundMesh = nullptr; shadowPipelineBound = false; // External binding state cannot be reused by the next layer.
 				if (r != VK_SUCCESS) { vkCmdEndRendering(commandBuffer); return r; }
@@ -611,27 +578,6 @@ namespace vve::simple {
 		if (const auto r = recordShadowMap(pointShadowArray, frameUniforms_.activePointLightCount, pointShadowFaceCount, kShadowMatrixPointBase, RecordedPass::point_shadow); r != VK_SUCCESS) { return r; }
 		debugLabels.end(commandBuffer);
 
-		if (backend_ == RendererBackend::hybrid_gi) {
-			// The same caster list, masked material shader and pipelines are culled against the probe sun bounds.
-			const auto &capture = target.probes.updated ? target.probes : target.coarseProbes;
-			const bool drawSun = capture.updated && target.probeSun >= 0;
-			if (target.probeShadowDirty && (drawSun || !target.probeShadowInitialized)) {
-				const auto set = drawSun ? capture.sets.descriptorSets[frameIndex * IrradianceProbes::views] : VK_NULL_HANDLE;
-				if (const auto r = recordShadowLayer(target.probeShadow, 0, target.probeSun >= 0 ? kShadowMatrixDirBase + target.probeSun * kNumShadowCascades : 0,
-					RecordedPass::probe_shadow, "Shadow: probe volume sun", set, target.probeShadowInitialized, drawSun); r != VK_SUCCESS) { return r; }
-				target.probeShadowInitialized = true;
-				if (drawSun) { target.probeShadowGeneration = probeShadowGeneration_; ++target.probeShadowRenders; }
-				if (drawSun || target.probeSun < 0) { target.probeShadowDirty = false; }
-			}
-			recordedPassOrder.push_back(RecordedPass::probe_capture);
-			const auto r = recordProbes(target, commandBuffer, [&](const NativeDrawContext &context) {
-				drawUploadedObjects(0, false, multiply(context.projection,context.view), RecordedPass::probe_capture);
-				const auto recorded = recordNative(target,commandBuffer,context);
-				if (nativeDraw_) { boundMesh = nullptr; }
-				return recorded;
-			});
-			if (r != VK_SUCCESS) { return r; }
-		}
 
 		const VkImageSubresourceRange colorRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole swapchain image.
 		const VkImageSubresourceRange depthRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole depth image.
@@ -640,7 +586,7 @@ namespace vve::simple {
 		// HDR was read by the previous blit; multisample colour was written by the previous forward pass.
 		const VkImageMemoryBarrier hdrBeginBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT | (target.hdrSampled ? VK_ACCESS_SHADER_READ_BIT : 0U),
+			.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
 			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -652,7 +598,7 @@ namespace vve::simple {
 		auto colourBeginBarriers = std::array{hdrBeginBarrier, hdrBeginBarrier};
 		colourBeginBarriers[1].image = target.msaaImage.image;
 		colourBeginBarriers[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | (target.hdrSampled ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : 0U) | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0U, 0U, nullptr, 0U, nullptr,
 			multisampled ? 2U : 1U, colourBeginBarriers.data());
 
@@ -756,7 +702,6 @@ namespace vve::simple {
 			}
 			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 4U, reads.data());
-			if (backend_ == RendererBackend::hybrid_gi) { recordAo(target, commandBuffer); }
 			auto litColour = colorAttachment;
 			litColour.resolveMode = VK_RESOLVE_MODE_NONE;
 			litColour.resolveImageView = VK_NULL_HANDLE;
@@ -766,16 +711,15 @@ namespace vve::simple {
 			lighting.pDepthAttachment = nullptr;
 			recordedPassOrder.push_back(RecordedPass::deferred_lighting);
 			debugLabels.begin(commandBuffer, "Deferred lighting", DebugLabelKind::lighting);
-			writeGpuTimestamp(target, commandBuffer, 10);
+			writeGpuTimestamp(target, commandBuffer, 0);
 			vkCmdBeginRendering(commandBuffer, &lighting);
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				backend_ == RendererBackend::hybrid_gi && giSettings.ao_enabled ? aoLightingPipeline.pipeline : lightingPipeline.pipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, lightingPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
 			const std::array sets{target.descriptorSets.descriptorSets[frameIndex], target.deferredSet};
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deferredPipelineLayout.pipelineLayout, 0U, 2U, sets.data(), 0U, nullptr);
 			vkCmdDraw(commandBuffer, 3U, 1U, 0U, 0U);
 			vkCmdEndRendering(commandBuffer);
-			writeGpuTimestamp(target, commandBuffer, 11);
+			writeGpuTimestamp(target, commandBuffer, 1);
 			debugLabels.end(commandBuffer);
 
 			// Restore opaque depth for the sky and transparency; retain individual HDR samples until their final resolve.
@@ -833,11 +777,7 @@ namespace vve::simple {
 			debugLabels.end(commandBuffer);
 		}
 
-		const bool toneMapped = toneMapping_.op != ToneMappingOperator::none || smaaEnabled(); // Both optional paths finish with an encoded attachment output.
-		target.lastOutputEncoded = toneMapped || target.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_SRGB || target.swapchain.imageFormat == VK_FORMAT_R8G8B8A8_SRGB;
-		target.lastOutputPreservesAlpha = toneMapped; // Retain both recorded policies through readback.
-		if (toneMapped) { recordToneMap(target, commandBuffer, imageIndex); }
-		else {
+		target.lastOutputEncoded = target.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_SRGB || target.swapchain.imageFormat == VK_FORMAT_R8G8B8A8_SRGB;
 		// Both images need Layout GENERAL because HDR image gets read and Swapchain image gets written
 		const std::array<VkImageMemoryBarrier, 2U> postBarriers{{
 			{
@@ -887,22 +827,21 @@ namespace vve::simple {
 		}
 		debugLabels.end(commandBuffer);
 
-		}
 
 		// ImGui stays on its owning window and loads the attachment only when vertices need drawing.
 		if (drawGui) {
 			const VkImageMemoryBarrier guiBarrier {
 				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-				.srcAccessMask = static_cast<VkAccessFlags>(toneMapped ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
+				.srcAccessMask = static_cast<VkAccessFlags>(VK_ACCESS_TRANSFER_WRITE_BIT),
 				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				.oldLayout = toneMapped ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
+				.oldLayout = VK_IMAGE_LAYOUT_GENERAL,
 				.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.image = target.swapchain.images[imageIndex],
 				.subresourceRange = colorRange,
 			};
-			vkCmdPipelineBarrier(commandBuffer, toneMapped ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 								0U, 0U, nullptr, 0U, nullptr, 1U, &guiBarrier);
 
 			const VkRenderingAttachmentInfo guiAttachment{
@@ -922,29 +861,25 @@ namespace vve::simple {
 			recordedPassOrder.push_back(RecordedPass::gui);
 			debugLabels.begin(commandBuffer, "GUI", DebugLabelKind::gui);
 			vkCmdBeginRendering(commandBuffer, &guiRenderingInfo);
-			guiRecord_(commandBuffer, toneMapped ? static_cast<VkPipeline>(target.toneMapGuiPipeline.pipeline) : VK_NULL_HANDLE);
+			guiRecord_(commandBuffer, VK_NULL_HANDLE);
 			vkCmdEndRendering(commandBuffer);
 			debugLabels.end(commandBuffer);
 		}
 
-		if (debugOutputReadback) {
-			const auto diagnostic = recordOutputDiagnostic(target, commandBuffer, imageIndex, drawGui || toneMapped);
-			if (diagnostic != VK_SUCCESS) { return diagnostic; }
-		}
 		const VkImageMemoryBarrier presentBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = static_cast<VkAccessFlags>((drawGui || toneMapped) ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
-			.oldLayout = (drawGui || toneMapped) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
+			.srcAccessMask = static_cast<VkAccessFlags>(drawGui ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
+			.oldLayout = drawGui ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.image = target.swapchain.images[imageIndex],
 			.subresourceRange = colorRange,
 		};
-		vkCmdPipelineBarrier(commandBuffer, (drawGui || toneMapped) ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
+		vkCmdPipelineBarrier(commandBuffer, drawGui ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
 									VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &presentBarrier);
 		if constexpr (VulkanDebugLabels::compiled) { debugLabels.end(commandBuffer); } // Frame
-		writeGpuTimestamp(target, commandBuffer, 17);
+		writeGpuTimestamp(target, commandBuffer, 3);
 		result = vkEndCommandBuffer(commandBuffer);
 		if (result != VK_SUCCESS) { return result; }
 

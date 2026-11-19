@@ -109,7 +109,9 @@ using Captures = std::map<std::string, std::vector<unsigned char>>; ///< RGBA ca
 	std::filesystem::create_directories(directory);
 	auto engine = test::hiddenEngine("deferred-comparison-tests", PixelExtent{128, 128});
 	auto &render = engine.renderSystem();
-	if (!render.setRendererBackend(backend) || !render.setAntialiasing(antialiasing) || !engine.init()) { return {}; }
+	// Compare the rendering paths with the same BRDF; their educational defaults differ.
+	if (!render.setRendererBackend(backend) || !render.setMaterialLighting(MaterialLighting::classic) ||
+		!render.setAntialiasing(antialiasing) || !engine.init()) { return {}; }
 	auto captures = Captures{};
 	const auto save = [&](std::string name) { return capture(engine, directory, std::move(name), captures, backend); };
 	const auto dark = LinearColor{.value = Vec3{0}};

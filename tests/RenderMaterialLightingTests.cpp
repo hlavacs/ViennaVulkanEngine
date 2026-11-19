@@ -61,6 +61,8 @@ int main() {
 	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 3; }
 	auto &render = engine.renderSystem();
+	// The fixture compares classic lighting with an explicit switch to PBR.
+	if (!render.setMaterialLighting(MaterialLighting::classic)) { return 1; }
 	render.setCamera(Camera::lookAt(Position{.value = Vec3{0, 0, 3}}, Position{}));
 	const auto sphere = render.addSphere(0.8F, LinearColor{.value = Vec3{0.8F}});
 	if (!sphere || !render.setObjectSurface(*sphere, SurfaceMaterial{0.05F, 1})) { return 4; }

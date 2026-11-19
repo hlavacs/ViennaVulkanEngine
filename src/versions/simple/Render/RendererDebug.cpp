@@ -149,11 +149,6 @@ namespace vve::simple {
 			target.readbackOutputEncoded, target.readbackPreservesAlpha, output_path);
 	}
 
-	/// @brief Persist a fenced receipt with its recorded encoding, never the renderer's current settings.
-	auto ForwardRenderer::writeOutputDiagnostic(const OutputDiagnostic &frame, const std::filesystem::path &path) const -> std::expected<void, Error> {
-		if (!frame.serial || frame.serial > completedSerial_) { return std::unexpected(Error::missing_object); }
-		return writeOutputPng(frame.pixels.bytes(), frame.extent, frame.format, frame.encoded, frame.preserveAlpha, path);
-	}
 
 	/// @brief Shared PNG conversion preserves legacy quantization and applies the recorded transfer exactly once.
 	auto ForwardRenderer::writeOutputPng(std::span<const std::byte> pixels, VkExtent2D extent, VkFormat format,

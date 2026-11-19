@@ -23,7 +23,7 @@ namespace vve::simple {
 			.projection = perspectiveVulkan(cameraVerticalFov, cameraAspect, cameraNear, cameraFar),
 			.ambient = static_cast<float>(scene.ambient),
 			.environmentLighting = Vec4{environmentTexture_ == kNoTexture ? -one() : static_cast<Scalar>(environmentTexture_),
-				one(), materialLighting_ == MaterialLighting::physically_based ? one() : zero(), zero()}};
+				one(), materialLighting() == MaterialLighting::physically_based ? one() : zero(), zero()}};
 		shadowLightMeta.clear();
 		const auto addMeta = [this](std::uint32_t type, std::size_t packedIndex, std::uint32_t firstLayer, const Mat4 &view, const Mat4 &projection, Scalar nearPlane, Scalar farPlane) {
 			shadowLightMeta.push_back({.light_index = static_cast<std::uint32_t>(packedIndex), .light_type = type,

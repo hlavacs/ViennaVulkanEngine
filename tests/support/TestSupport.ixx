@@ -9,7 +9,6 @@ import std;
 import VVEngine.Simple;
 import VVEngine.Math;
 import VVEngine.Simple.Vulkan;
-import VVEngine.Simple.IrradianceProbes;
 
 export namespace vve::test {
 
@@ -66,6 +65,7 @@ template <typename TRenderer>
 std::optional<std::pair<unsigned,unsigned>> probeValidity(TRenderer &renderer, unsigned cascade = 0) {
     using namespace vve::simple;
     const auto &p = cascade == 0 ? renderer.targets.front().probes : renderer.targets.front().coarseProbes;
+    using IrradianceProbes = std::remove_cvref_t<decltype(p)>;
     VulkanReadback readback;
     if (readback.create(renderer.allocator,renderer.device.device,renderer.device.graphicsQueue,renderer.commandPool.commandPool,
         p.coefficients.extent,VK_FORMAT_R32G32B32A32_SFLOAT) != VK_SUCCESS ||

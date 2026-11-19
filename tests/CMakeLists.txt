@@ -116,8 +116,12 @@ vve_add_engine_test(RenderFrameCountTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderRuntimeUpdateTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderResizeTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderAntialiasingTests GPU Vulkan::Vulkan vve_test_support)
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
+   target_compile_definitions(RenderAntialiasingTests PRIVATE VVE_TEST_TEACHING_ENGINE)
+   vve_add_engine_test(SimpleCapabilitiesTests)
+endif()
 # IQ-00 freezes Linux Debug; other platform/configuration references belong to IQ-10.
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex" AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
    # Restore the original sealed IQ-00 captures, including legacy UNORM; never render replacement references.
    set(iq_reference_archive "${CMAKE_CURRENT_SOURCE_DIR}/assets/image-quality-reference.tar.gz")
    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${iq_reference_archive}")
@@ -192,6 +196,7 @@ vve_add_engine_test(RenderPickingTests)
 vve_add_engine_test(RenderScreenRayTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderTransparencyCaptureTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderBackgroundColorTests GPU Vulkan::Vulkan vve_test_support)
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex")
 vve_add_engine_test(RenderToneMappingTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderToneMappingMatrixTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderPostOutputLifecycleTests GPU Vulkan::Vulkan vve_test_support)
@@ -224,6 +229,7 @@ if(EXISTS "${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d")
    set_tests_properties(RenderToneMappingTests PROPERTIES ENVIRONMENT_MODIFICATION
       "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d;VK_INSTANCE_LAYERS=set:VK_LAYER_KHRONOS_validation;VK_LAYER_VALIDATE_SYNC=set:1;VK_LAYER_REPORT_FLAGS=set:info,error,warn;VK_LAYER_DEBUG_ACTION=set:VK_DBG_LAYER_ACTION_LOG_MSG")
 endif()
+endif()
 vve_add_engine_test(RenderSkyboxTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderSpriteTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(SceneRemovalTests vve_test_support)
@@ -248,6 +254,7 @@ target_compile_definitions(DeferredRendererTests PRIVATE
 add_test(NAME DeferredRendererMsaaTests COMMAND DeferredRendererTests --msaa4)
 set_tests_properties(RendererBackendTests DeferredRendererTests DeferredRendererMsaaTests PROPERTIES
    LABELS "gpu;deferred" TIMEOUT 180 RUN_SERIAL TRUE)
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex")
 # GI selection, disabled equivalence and real raster-probe transport share the normal native graphics workflow.
 vve_add_engine_test(HybridGiBackendTests GPU vve_test_support)
 vve_add_engine_test(HybridGiEquivalenceTests GPU Vulkan::Vulkan vve_test_support)
@@ -282,12 +289,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/share/vu
    set_tests_properties(HybridGiLifecycleTests ${gi_lifecycle_cases} PROPERTIES ENVIRONMENT_MODIFICATION
       "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d;VK_LAYER_VALIDATE_SYNC=set:1")
 endif()
-# Compile application-owned stages with the same Slang embedding path as the renderer, including only public sampling code.
+endif()
+# Native MSAA quality tests apply to both implementations, including Simple's two rendering paths.
 set(native_shader_dir "${CMAKE_CURRENT_BINARY_DIR}/native-shaders")
 get_target_property(native_slangc ViennaVulkanEngine VVE_SLANGC)
-set(VVE_NATIVE_TEST_REPORT_DIR "${CMAKE_CURRENT_BINARY_DIR}/tmp/HybridGiProceduralTests" CACHE PATH "Native-draw captures and optional pre-change PNG references")
-target_compile_definitions(HybridGiProceduralTests PRIVATE "VVE_NATIVE_TEST_REPORT_DIR=\"${VVE_NATIVE_TEST_REPORT_DIR}\"")
-foreach(native_entry IN ITEMS vertexMain gbufferMain captureMain plainMain forwardMain unlitMain)
+set(native_entries vertexMain plainMain unlitMain)
+if(TARGET HybridGiProceduralTests)
+   list(APPEND native_entries gbufferMain captureMain forwardMain)
+endif()
+foreach(native_entry IN LISTS native_entries)
    set(native_stage fragment)
    if(native_entry STREQUAL vertexMain)
       set(native_stage vertex)
@@ -303,8 +313,6 @@ foreach(native_entry IN ITEMS vertexMain gbufferMain captureMain plainMain forwa
    list(APPEND native_headers "${native_header}")
 endforeach()
 add_custom_target(vve_native_test_shaders DEPENDS ${native_headers})
-add_dependencies(HybridGiProceduralTests vve_native_test_shaders)
-target_include_directories(HybridGiProceduralTests PRIVATE "${native_shader_dir}")
 vve_add_engine_test(RenderAntialiasingQualityTests GPU Vulkan::Vulkan vve_test_support)
 add_dependencies(RenderAntialiasingQualityTests vve_native_test_shaders)
 target_include_directories(RenderAntialiasingQualityTests PRIVATE "${native_shader_dir}")
@@ -316,6 +324,11 @@ if(EXISTS "${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d")
    set_property(TEST RenderAntialiasingQualityTests APPEND PROPERTY ENVIRONMENT_MODIFICATION
       "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d")
 endif()
+if(TARGET HybridGiProceduralTests)
+set(VVE_NATIVE_TEST_REPORT_DIR "${CMAKE_CURRENT_BINARY_DIR}/tmp/HybridGiProceduralTests" CACHE PATH "Native-draw captures and optional pre-change PNG references")
+target_compile_definitions(HybridGiProceduralTests PRIVATE "VVE_NATIVE_TEST_REPORT_DIR=\"${VVE_NATIVE_TEST_REPORT_DIR}\"")
+add_dependencies(HybridGiProceduralTests vve_native_test_shaders)
+target_include_directories(HybridGiProceduralTests PRIVATE "${native_shader_dir}")
 set_tests_properties(HybridGiProceduralTests PROPERTIES
    LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
 # Pixel comparison boundary/negative controls run without initializing a window or Vulkan device.
@@ -387,6 +400,7 @@ if(TARGET simple_forward_demo)
       PASS_REGULAR_EXPRESSION "renderer=hybrid-gi gbuffer=1 deferred_lighting=1"
       FAIL_REGULAR_EXPRESSION "Validation Error;VUID-;simple_forward_demo failed")
 endif()
+endif()
 # Debug builds name G-buffer images, shadow maps and attachments and label every pass for RenderDoc; Release must not.
 vve_add_engine_test(RenderDebugLabelsTests GPU Vulkan::Vulkan vve_test_support)
 set_tests_properties(RenderDebugLabelsTests PROPERTIES LABELS "gpu;deferred" TIMEOUT 120)
@@ -398,6 +412,7 @@ set_tests_properties(RenderSkyTests PROPERTIES LABELS "gpu;deferred" TIMEOUT 600
 find_path(VVE_TEST_PROFILES_LAYER_DIR VkLayer_khronos_profiles.json
    PATHS "${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d" "${VVE_VULKAN_SDK_ROOT}/Bin" NO_DEFAULT_PATH)
 if(VVE_TEST_PROFILES_LAYER_DIR)
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex")
    # Keep the explicit validation name; loader filters enable Profiles without platform-specific layer-list separators.
    foreach(mode Unorm NoMutable UnormNoMutable)
       if(mode STREQUAL "Unorm")
@@ -444,6 +459,7 @@ if(VVE_TEST_PROFILES_LAYER_DIR)
       "VK_KHRONOS_PROFILES_PROFILE_DIRS=set:${CMAKE_CURRENT_SOURCE_DIR}/assets;VK_KHRONOS_PROFILES_PROFILE_NAME=set:VP_VVE_unorm_output;VK_KHRONOS_PROFILES_SIMULATE_CAPABILITIES=set:SIMULATE_FORMATS_BIT")
    set_property(TEST RenderToneMappingNoMutableTests APPEND PROPERTY ENVIRONMENT_MODIFICATION
       "VK_KHRONOS_PROFILES_EXCLUDE_DEVICE_EXTENSIONS=set:VK_KHR_swapchain_mutable_format")
+endif()
    add_test(NAME RenderAntialiasingUnsupportedTests COMMAND RenderAntialiasingQualityTests --expect-unsupported)
    set_tests_properties(RenderAntialiasingUnsupportedTests PROPERTIES LABELS "gpu;image_quality;capabilities" TIMEOUT 120 RUN_SERIAL TRUE
       FAIL_REGULAR_EXPRESSION "Validation Error;VUID-;SYNC-HAZARD"
@@ -462,6 +478,7 @@ if(VVE_TEST_PROFILES_LAYER_DIR)
       ENVIRONMENT_MODIFICATION "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_TEST_PROFILES_LAYER_DIR}"
       LABELS "gpu;deferred;capabilities" RUN_SERIAL TRUE TIMEOUT 60
       FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex")
    add_test(NAME HybridGiBackendUnsupportedTests COMMAND HybridGiBackendTests --expect-unsupported)
    # Share the exact real-layer capability restriction used by the unchanged deferred test.
    foreach(profile_property IN ITEMS ENVIRONMENT ENVIRONMENT_MODIFICATION)
@@ -470,6 +487,7 @@ if(VVE_TEST_PROFILES_LAYER_DIR)
    endforeach()
    set_tests_properties(HybridGiBackendUnsupportedTests PROPERTIES
       LABELS "gpu;gi;capabilities" RUN_SERIAL TRUE TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+endif()
 endif()
 
 # Reuse the existing assertions and assets against deferred rendering, with serialized fixture ownership.
@@ -501,6 +519,7 @@ if(TARGET postprocessing)
    endif()
 endif()
 
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex")
 # IQ-03a freezes independent coverage before renderer implementation; shaders are strictly test-owned.
 vve_add_engine_test(RenderSmaaQualityTests GPU Vulkan::Vulkan vve_test_support)
 target_compile_definitions(RenderSmaaQualityTests PRIVATE VVE_SMAA_QUALITY_DIR="${CMAKE_BINARY_DIR}/verify/image-quality/smaa")
@@ -538,6 +557,7 @@ set_tests_properties(RenderSmaaCpuTests PROPERTIES LABELS "image_quality" TIMEOU
 set_tests_properties(RenderSmaaQualityTests RenderSmaaStageOracleTests PROPERTIES LABELS "gpu;image_quality" RUN_SERIAL TRUE TIMEOUT 600
    FAIL_REGULAR_EXPRESSION "Validation Error;VUID-;SYNC-HAZARD"
    ENVIRONMENT_MODIFICATION "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d;VK_INSTANCE_LAYERS=set:VK_LAYER_KHRONOS_validation;VK_LAYER_VALIDATE_SYNC=set:1;VK_LAYER_REPORT_FLAGS=set:info,error,warn;VK_LAYER_DEBUG_ACTION=set:VK_DBG_LAYER_ACTION_LOG_MSG")
+endif()
 
 # Make the selected SDK's validation layer discoverable for every test, including subcommands and ordinary Debug tests.
 if(EXISTS "${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d")

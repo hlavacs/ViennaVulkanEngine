@@ -25,11 +25,3 @@
 #define VVE_PERSPECTIVE_SHADOW_WORLD_BIAS 0.02f ///< Two-centimetre receiver offset in world units.
 #define VVE_PERSPECTIVE_SHADOW_EPSILON 0.001f   ///< Positive denominator floor near the light origin.
 #define VVE_PERSPECTIVE_SHADOW_MIN_BIAS 0.000002f ///< Minimum offset in nonlinear depth units.
-#include "../../../shaders/vve_irradiance.h"
-#define VVE_AO_RADIUS 0.5f ///< Contact visibility radius in world metres, independent of resolution and exposure.
-#define VVE_AO_DIRECTIONS 8 ///< Rotated screen-space horizon directions per pixel.
-#define VVE_AO_STEPS 4 ///< Radial depth taps per direction (32 total).
-#define VVE_AO_BIAS 0.02f ///< Metres above the tangent plane to reject coplanar self-occlusion.
-#define VVE_AO_NORMAL_COS 0.9f ///< Minimum normal similarity for spatial filtering and coverage-sample reuse.
-#define VVE_AO_DEPTH_RELATIVE 0.01f ///< Maximum relative linear view-depth difference when reusing sample-zero AO.
-#define VVE_AO_FILTER_DEPTH 0.05f ///< Bilateral linear-depth scale in metres; gaps above this are rejected.

@@ -346,11 +346,11 @@ namespace vve::simple {
 	/// @brief Selects shared scene passes before GPU startup; no process-wide state is used.
 	inline auto RenderSystem::setRendererBackend(RendererBackend backend) -> std::expected<void, Error> {
 		// After Engine::init the selected surface is available, so report hardware rejection at the API boundary.
-		if ((backend == RendererBackend::deferred || backend == RendererBackend::hybrid_gi) &&
+		if (backend == RendererBackend::deferred &&
 			backend != renderer_.rendererBackend() && !renderer_.initialized() && window_system_ != nullptr) {
 			for (const auto &entry : window_system_->windows()) {
 				if (entry.get().rendererId().value == "none") { continue; }
-				if (const auto result = renderer_.probeDeferred(entry.get().native(), backend == RendererBackend::hybrid_gi); result != VK_SUCCESS) {
+				if (const auto result = renderer_.probeDeferred(entry.get().native()); result != VK_SUCCESS) {
 					std::cerr << "[vve::simple] deferred selection unsupported: VkResult=" << result << '\n';
 					return std::unexpected(Error::platform_error);
 				}
@@ -365,10 +365,10 @@ namespace vve::simple {
 	inline auto RenderSystem::setGiSettings(GiSettings settings) -> std::expected<void, Error> {
 		if (!std::isfinite(settings.indirect_strength) || settings.indirect_strength < zero() ||
 			(settings.quality != GiQuality::low && settings.quality != GiQuality::medium)) { return std::unexpected(Error::invalid_argument); }
-		return renderer_.setGiSettings(settings);
+		return std::unexpected(Error::unsupported_feature);
 	}
 	/// @brief Returns controls without accessing the device.
-	inline auto RenderSystem::giSettings() const -> GiSettings { return renderer_.giSettings; }
+	inline auto RenderSystem::giSettings() const -> GiSettings { return GiSettings{.enabled = false}; }
 	/// @brief Returns the retained antialiasing setting.
 	inline auto RenderSystem::antialiasing() const -> Antialiasing { return renderer_.antialiasing(); }
 

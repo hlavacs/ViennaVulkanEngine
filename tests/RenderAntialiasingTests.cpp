@@ -115,8 +115,10 @@ namespace {
 			if (window.depthImage.samples != sample || window.hdrImage.samples != VK_SAMPLE_COUNT_1_BIT ||
 				(window.msaaImage.image != VK_NULL_HANDLE) != four ||
 				(four && window.msaaImage.samples != sample)) { return {}; }
+#ifndef VVE_TEST_TEACHING_ENGINE
 			if (renderer.smaaEnabled() && (window.ldrImage.extent.width != window.swapchain.extent.width ||
 				window.ldrImage.extent.height != window.swapchain.extent.height || window.smaaSet == VK_NULL_HANDLE)) { return {}; }
+#endif
 			// Deferred surface data stays multisampled; only the final lit HDR colour is resolved.
 			if (render.rendererBackend() == RendererBackend::deferred) {
 				for (const auto &image : window.gbufferImages) {
@@ -155,7 +157,11 @@ int main() {
 	bool supported{};
 	const auto single = checkMode(Antialiasing::none, supported);
 	const auto multi = checkMode(Antialiasing::msaa4, supported);
+#ifdef VVE_TEST_TEACHING_ENGINE
+	return single && multi && (!supported || *multi > *single) ? 0 : 2;
+#else
 	const auto spatial = checkMode(Antialiasing::smaa, supported);
 	const auto combined = checkMode(Antialiasing::msaa4_smaa, supported);
 	return single && multi && spatial && combined && (!supported || *multi > *single) ? 0 : 2;
+#endif
 }

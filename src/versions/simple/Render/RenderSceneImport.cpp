@@ -287,7 +287,6 @@ namespace vve::simple {
 				scene_.addImportedCamera(instance.value);
 			}
 		}
-		renderer_.invalidateProbes(true); // A successfully loaded scene must never sample the previous scene's radiance.
 		return instance;
 	}
 
@@ -444,7 +443,6 @@ namespace vve::simple {
 		if (auto *render_instance = handle ? scene_.findInstance(*handle) : nullptr) {
 			render_instance->world_transform = world;									// Exact, also under non-uniformly scaled parents.
 			render_instance->local_transform = detail::decomposeTransform(world);	// What objectTransform reports.
-			renderer_.invalidateProbes(false, true);
 		}
 	}
 

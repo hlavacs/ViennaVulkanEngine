@@ -29,6 +29,8 @@ int main(int argc, char **argv) {
 
 	auto &assets = engine.assets();
 	auto &render = engine.renderSystem();
+	// These reference contrasts were measured with classic direct lighting.
+	if (!render.setMaterialLighting(vve::MaterialLighting::classic)) { return 1; }
 	const bool external_model = argc > 1;
 	const auto model_path = external_model ? std::filesystem::path{argv[1]} :
 		std::filesystem::path{VVE_TEST_MATERIAL_MODEL};
