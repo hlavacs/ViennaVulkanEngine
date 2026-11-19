@@ -1,0 +1,396 @@
+module;
+#include <compare>
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#define VVE_COMPLEX_DEFINED_SDL_MAIN_HANDLED
+#endif
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <vulkan/vulkan_raii.hpp>
+#include <SDL3/SDL_vulkan.h>
+#include "../shaders/complex_shared.h"
+#ifdef VVE_COMPLEX_DEFINED_SDL_MAIN_HANDLED
+#undef SDL_MAIN_HANDLED
+#undef VVE_COMPLEX_DEFINED_SDL_MAIN_HANDLED
+#endif
+
+export module VVEngine.Complex.Vulkan:Pipeline;
+import :Device;
+import :OwnedHandle;
+import VVEngine.Complex.Scene;
+import VVEngine.Complex.Types;
+import std;
+
+/**
+	* @file
+	* @brief Vulkan pipeline objects for the complex forward renderer.
+	*
+	* Functional objects:
+	* - ObjectPushConstants stores per-object draw data copied through Vulkan push constants.
+	* - materialTextureCapacity / descriptorSetBindings select the device-sized set-0 layout used by complex_forward.slang.
+	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for set 0.
+	* - VulkanVertexInputDescription stores the fixed RenderVertex binding and attribute layout for the forward pipeline.
+	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
+	* - VulkanShaderModule owns only VkShaderModule creation from embedded SPIR-V words and teardown.
+	* - VulkanGraphicsPipeline owns one dynamic-rendering VkPipeline: forward color+depth, blended forward, or depth-only shadow.
+	*/
+export namespace vve::complex {
+	/// @brief Plain GPU material data matching the Slang GpuMaterial storage-buffer layout.
+	struct GpuMaterial {
+		Vec4 baseColorFactor{one(), one(), one(), one()}; ///< Base-color factor with opacity in w; a base-color texture multiplies it.
+		Vec4 emissiveFactor{zero(), zero(), zero(), zero()}; ///< Emissive rgb factor with the AlphaMode in w; an emissive texture multiplies it.
+		std::uint32_t baseColorTexture{kNoTexture};       ///< Base-color texture-table index.
+		std::uint32_t normalTexture{kNoTexture};          ///< Normal texture-table index.
+		std::uint32_t metalnessTexture{kNoTexture};       ///< Metalness texture-table index (blue channel).
+		std::uint32_t roughnessTexture{kNoTexture};       ///< Roughness texture-table index (green channel).
+		std::uint32_t emissiveTexture{kNoTexture};        ///< Emissive texture-table index.
+		std::uint32_t ambientOcclusionTexture{kNoTexture}; ///< Ambient-occlusion texture-table index (red channel).
+		Scalar roughnessFactor{static_cast<Scalar>(0.5)}; ///< Roughness factor; a roughness texture multiplies it.
+		Scalar metalnessFactor{zero()};                   ///< Metalness factor; a metalness texture multiplies it.
+		Scalar alphaCutoff{VVE_ALPHA_CUTOFF}; ///< Imported hybrid alpha threshold.
+		std::uint32_t sidedness{VVE_MATERIAL_LEGACY_SIDED}; ///< Explicit import policy or the original engine-authored policy.
+		Vec2 padding{}; ///< Explicit sixteen-byte material stride alignment.
+	};
+	static_assert(sizeof(GpuMaterial) == 80U); ///< Keeps the C++ and Slang storage-buffer strides identical.
+
+	/// @brief Plain per-object push-constant data matching the Slang ObjectPushConstants block layout.
+	struct ObjectPushConstants {
+		Mat4 model{};                        ///< Object-local model matrix selected before each draw call.
+		std::uint32_t materialIndex{};       ///< Dense slot in the GPU material storage buffer.
+		std::uint32_t shadowMatrixIndex{};   ///< Index into FrameUniforms::shadowViewProjs used by the shadow vertex stage.
+		std::uint32_t flags{};               ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water, bit 4 terrain (objectFlag values).
+		float opacity{1.0F};                 ///< Object alpha multiplied with the material alpha.
+		Vec4 waves{};                        ///< Water height, wavelength, angular speed and enabled flag; for terrain: height offset, columns, rows, cell size.
+	};
+	static_assert(sizeof(ObjectPushConstants) == 96U); ///< Keeps the C++ and Slang push-constant blocks identical.
+
+	/// @brief Bits of ObjectPushConstants::flags, mirrored by complex_forward.slang.
+	namespace objectFlag {
+		inline constexpr std::uint32_t unlit{1U};  ///< Flat base colour without lighting.
+		inline constexpr std::uint32_t sky{2U};    ///< Skybox drawn around the camera at the far plane.
+		inline constexpr std::uint32_t sprite{4U}; ///< Quad turned towards the camera.
+		inline constexpr std::uint32_t water{8U}; ///< Analytic world-space waves and water normals.
+		inline constexpr std::uint32_t terrain{VVE_OBJECT_TERRAIN_FLAG}; ///< Tessellated height grid; waves carries its height-buffer offset, size and spacing.
+	} // namespace objectFlag
+
+	/// @brief Shader stages that read ObjectPushConstants; every vkCmdPushConstants call must name exactly these.
+	inline constexpr VkShaderStageFlags objectPushConstantStages{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT |
+		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT};
+
+	/// @brief Set-0 descriptor bindings of complex_forward.slang; every [[vk::binding(n, 0)]] in the shader must match this table.
+	namespace shaderBinding {
+		inline constexpr std::uint32_t frameUniforms{0U};      ///< ConstantBuffer<FrameUniforms> frame.
+		inline constexpr std::uint32_t baseColorTextures{1U};  ///< Sampler2D baseColorTextures[kMaxSceneTextures].
+		inline constexpr std::uint32_t spotShadowArray{2U};    ///< Sampler2DArrayShadow spotShadowArray.
+		inline constexpr std::uint32_t dirShadowArray{3U};     ///< Sampler2DArrayShadow dirShadowArray.
+		inline constexpr std::uint32_t pointShadowArray{4U};   ///< Sampler2DArrayShadow pointShadowArray.
+		inline constexpr std::uint32_t materials{VVE_MATERIAL_BINDING}; ///< StructuredBuffer<GpuMaterial> materials.
+		inline constexpr std::uint32_t terrainHeights{VVE_TERRAIN_HEIGHT_BINDING}; ///< StructuredBuffer<float> terrainHeights.
+	} // namespace shaderBinding
+
+	/// @brief Returns the material slots allowed by all descriptor limits, reserving three shadows, two buffers and one color attachment.
+	[[nodiscard]] inline std::uint32_t materialTextureCapacity(const VkPhysicalDeviceLimits &limits) {
+		const auto imageSamplerLimit = std::min({limits.maxPerStageDescriptorSamplers, limits.maxDescriptorSetSamplers,
+			limits.maxPerStageDescriptorSampledImages, limits.maxDescriptorSetSampledImages});
+		return std::min(imageSamplerLimit > 3U ? imageSamplerLimit - 3U : 0U,
+			limits.maxPerStageResources > 6U ? limits.maxPerStageResources - 6U : 0U);
+	}
+
+	/// @brief Descriptor-set layout of set 0; the material array uses the renderer's selected device capacity.
+	[[nodiscard]] inline auto descriptorSetBindings(std::uint32_t textureCapacity) {
+		return std::array<VkDescriptorSetLayoutBinding, 7U>{{
+		{.binding = shaderBinding::frameUniforms, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1U, .stageFlags = objectPushConstantStages},
+		{.binding = shaderBinding::baseColorTextures, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = textureCapacity, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::spotShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::dirShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::pointShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::materials, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::terrainHeights, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT},
+		}};
+	}
+
+	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
+	struct VulkanDescriptorSetLayout {
+		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> descriptorSetLayout{}; ///< Owned descriptor-set layout for set 0 frame uniforms, shadow maps, and object texture.
+		std::array<VkDescriptorSetLayoutBinding, 7U> bindings{}; ///< Device-sized binding counts also used to allocate each window's descriptor pool.
+
+		VulkanDescriptorSetLayout() = default;
+		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout &) = delete;
+		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
+
+		/**
+			* @brief Creates set 0 with the device-selected material texture capacity.
+			*
+			* @param owningDevice Logical device that owns the created descriptor-set layout.
+			* @param textureCapacity Material texture slots available in the shader and descriptor sets.
+			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t textureCapacity) {
+			cleanup();
+			if (owningDevice == VK_NULL_HANDLE || textureCapacity == 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
+			bindings = descriptorSetBindings(textureCapacity);
+			const VkDescriptorSetLayoutCreateInfo createInfo{
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
+				.pBindings = bindings.data(),
+			};
+
+			VkDescriptorSetLayout rawLayout{VK_NULL_HANDLE};
+			const VkResult result = vkCreateDescriptorSetLayout(owningDevice, &createInfo, nullptr, &rawLayout);
+			return descriptorSetLayout.assign(owningDevice.handle, result, rawLayout);
+		}
+
+		/**
+			* @brief Releases the owned descriptor-set layout through its RAII wrapper.
+			*/
+		void cleanup() { descriptorSetLayout.reset(); }
+	};
+
+	/// @brief Plain vertex input layout declared once for the RenderVertex position, normal, UV, and tangent members.
+	struct VulkanVertexInputDescription {
+		VkVertexInputBindingDescription binding{
+			.binding = 0U,
+			.stride = sizeof(RenderVertex),
+			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+		}; ///< Binding 0 consumes one complete RenderVertex per input vertex.
+		std::array<VkVertexInputAttributeDescription, 4> attributes{{
+			{.location = 0U, .binding = 0U, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(RenderVertex, position)},
+			{.location = 1U, .binding = 0U, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(RenderVertex, normal)},
+			{.location = 2U, .binding = 0U, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(RenderVertex, uv)},
+			{.location = 3U, .binding = 0U, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(RenderVertex, tangent)},
+		}}; ///< Position, normal, texture-coordinate, and tangent attributes consumed by the vertex shader.
+	};
+	static_assert(sizeof(RenderVertex) == 48U); ///< The R32 attribute formats above require float members (fails with VVE_MATH_USE_DOUBLE).
+
+	/// @brief Minimal Vulkan pipeline-layout owner; no graphics pipeline, commands, or sync are created here.
+	struct VulkanPipelineLayout {
+		VulkanOwnedHandle<vk::raii::PipelineLayout, VkPipelineLayout> pipelineLayout{}; ///< Owned pipeline layout for set 0 and model push constants.
+
+		VulkanPipelineLayout() = default;
+		VulkanPipelineLayout(const VulkanPipelineLayout &) = delete;
+		VulkanPipelineLayout &operator=(const VulkanPipelineLayout &) = delete;
+
+		/**
+			* @brief Creates a pipeline layout with one descriptor set and one vertex-visible object push constant range.
+			*
+			* @param owningDevice Logical device that owns the created pipeline layout.
+			* @param setLayout Descriptor-set layout used as set 0 by the graphics pipeline.
+			* @param extraLayout Optional sampled G-buffer layout in set 1 for deferred lighting.
+			* @return VK_SUCCESS when the pipeline layout is available, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkDescriptorSetLayout setLayout, VkDescriptorSetLayout extraLayout = VK_NULL_HANDLE) {
+			cleanup();
+			if (owningDevice == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkPushConstantRange modelPushConstants{
+				.stageFlags = objectPushConstantStages,
+				.offset = 0U,
+				.size = sizeof(ObjectPushConstants),
+			};
+			const std::array layouts{setLayout, extraLayout}; // Deferred sampled attachments occupy set 1.
+			const VkPipelineLayoutCreateInfo createInfo{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+				.setLayoutCount = extraLayout == VK_NULL_HANDLE ? 1U : 2U,
+				.pSetLayouts = layouts.data(),
+				.pushConstantRangeCount = 1U,
+				.pPushConstantRanges = &modelPushConstants,
+			};
+
+			VkPipelineLayout rawLayout{VK_NULL_HANDLE};
+			const VkResult result = vkCreatePipelineLayout(owningDevice, &createInfo, nullptr, &rawLayout);
+			return pipelineLayout.assign(owningDevice.handle, result, rawLayout);
+		}
+
+		/**
+			* @brief Releases the owned pipeline layout through its RAII wrapper.
+			*/
+		void cleanup() { pipelineLayout.reset(); }
+	};
+
+	/// @brief Minimal Vulkan shader-module owner; no layouts, pipelines, commands, or sync are created here.
+	struct VulkanShaderModule {
+		VulkanOwnedHandle<vk::raii::ShaderModule, VkShaderModule> shaderModule{}; ///< Owned shader module created from embedded SPIR-V words.
+
+		VulkanShaderModule() = default;
+		VulkanShaderModule(const VulkanShaderModule &) = delete;
+		VulkanShaderModule &operator=(const VulkanShaderModule &) = delete;
+
+		/**
+			* @brief Creates a Vulkan shader module from borrowed, aligned SPIR-V words.
+			*
+			* @param owningDevice Logical device that owns the created shader module.
+			* @param code SPIR-V words that remain valid for this call; Vulkan copies them during creation.
+			* @return VK_SUCCESS when the shader module is available, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::span<const std::uint32_t> code) {
+			cleanup();
+			if (owningDevice == VK_NULL_HANDLE || code.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkShaderModuleCreateInfo createInfo{
+				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+				.codeSize = code.size_bytes(),
+				.pCode = code.data(),
+			};
+
+			VkShaderModule rawShaderModule{};
+			const VkResult result = vkCreateShaderModule(owningDevice, &createInfo, nullptr, &rawShaderModule);
+			return shaderModule.assign(owningDevice.handle, result, rawShaderModule);
+		}
+
+		/**
+			* @brief Releases the owned shader module through its RAII wrapper.
+			*/
+		void cleanup() { shaderModule.reset(); }
+
+		/**
+			* @brief Destroys the owned shader module on scope exit.
+			*/
+		~VulkanShaderModule() { cleanup(); }
+	};
+
+	/// @brief One dynamic-rendering graphics pipeline: forward color+depth when a fragment module is given, depth-only shadow pipeline otherwise.
+	struct VulkanGraphicsPipeline {
+		VulkanOwnedHandle<vk::raii::Pipeline, VkPipeline> pipeline{}; ///< Owned graphics pipeline.
+
+		VulkanGraphicsPipeline() = default;
+		VulkanGraphicsPipeline(const VulkanGraphicsPipeline &) = delete;
+		VulkanGraphicsPipeline &operator=(const VulkanGraphicsPipeline &) = delete;
+
+		/**
+			* @brief Creates the pipeline for the given attachments with dynamic viewport and scissor.
+			*
+			* @param owningDevice Logical device that owns the created pipeline.
+			* @param pipelineLayout Borrowed pipeline layout used by the shader stages.
+			* @param vertexModule Borrowed vertex shader module.
+			* @param vertexEntry Vertex entry point name.
+			* @param fragmentModule Borrowed fragment shader module (entry fragmentMain), or VK_NULL_HANDLE for a depth-only shadow pipeline.
+			* @param vertexInput Borrowed vertex binding and attribute description used by the pipeline.
+			* @param colorAttachmentFormat Color format, VK_FORMAT_UNDEFINED for depth-only pipelines.
+			* @param depthAttachmentFormat Depth format of the depth attachment.
+			* @param textureCapacity Device-selected fragment texture-array specialization; unused by depth-only pipelines.
+			* @param blended True blends colour by source alpha and keeps the depth buffer unchanged (transparent objects).
+			* @param samples Coverage samples matching both forward attachments; shadow pipelines keep one.
+			* @param colorFormats Optional multiple attachment formats for opaque deferred geometry.
+			* @param fragmentEntry Fragment entry matching the selected embedded shader module.
+			* @param fullscreen True omits vertex inputs and depth tests for the lighting triangle.
+			* @param sampleShading True evaluates each coverage sample, requiring sampleRateShading.
+			* @param tessControlModule Optional terrain hull module (entry terrainHullMain); with tessEvalModule it draws 4-point patches.
+			* @param tessEvalModule Optional terrain domain module, requiring the tessellationShader feature.
+			* @param tessEvalEntry Domain entry point, terrainDomainMain or terrainShadowDomainMain.
+			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
+											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
+			std::span<const VkFormat> colorFormats = {}, const char *fragmentEntry = "fragmentMain", bool fullscreen = false, bool sampleShading = false,
+			VkShaderModule tessControlModule = VK_NULL_HANDLE, VkShaderModule tessEvalModule = VK_NULL_HANDLE, const char *tessEvalEntry = "terrainDomainMain", bool twoSided = false) {
+			cleanup();
+			const bool depthOnly{colorAttachmentFormat == VK_FORMAT_UNDEFINED}; // Masked shadows have a fragment stage but no colour.
+			const bool tessellated{tessControlModule != VK_NULL_HANDLE};
+			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
+				 (!depthOnly && (colorAttachmentFormat == VK_FORMAT_UNDEFINED || textureCapacity == 0U)) || tessellated != (tessEvalModule != VK_NULL_HANDLE)) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			// Specialize the embedded shader at pipeline creation; no runtime compiler or descriptor-indexing extension is needed.
+			const VkSpecializationMapEntry textureCapacityEntry{VVE_TEXTURE_CAPACITY_CONSTANT_ID, 0U, sizeof(textureCapacity)};
+			const VkSpecializationInfo specialization{1U, &textureCapacityEntry, sizeof(textureCapacity), &textureCapacity};
+			// Stage order is free in Vulkan; the optional fragment stage comes last so depth-only pipelines simply stop before it.
+			std::array<VkPipelineShaderStageCreateInfo, 4> shaderStages{};
+			std::uint32_t stageCount{};
+			shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_VERTEX_BIT, .module = vertexModule, .pName = vertexEntry};
+			if (tessellated) {
+				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, .module = tessControlModule, .pName = "terrainHullMain"};
+				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, .module = tessEvalModule, .pName = tessEvalEntry};
+			}
+			if (fragmentModule != VK_NULL_HANDLE) {
+				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = fragmentEntry, .pSpecializationInfo = &specialization};
+			}
+			const VkVertexInputBindingDescription &binding = vertexInput.binding;
+			const auto &attributes = vertexInput.attributes;
+			const VkPipelineVertexInputStateCreateInfo vertexInputState{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+				.vertexBindingDescriptionCount = fullscreen ? 0U : 1U,
+				.pVertexBindingDescriptions = &binding,
+				.vertexAttributeDescriptionCount = fullscreen ? 0U : static_cast<std::uint32_t>(attributes.size()),
+				.pVertexAttributeDescriptions = attributes.data(),
+			};
+			const VkPipelineInputAssemblyStateCreateInfo inputAssembly{.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+				.topology = tessellated ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
+			// Terrain patches are quads: corners (u0,v0), (u1,v0), (u1,v1), (u0,v1).
+			const VkPipelineTessellationStateCreateInfo tessellationState{.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, .patchControlPoints = 4U};
+			// Attachment sizes are recorded per pass, so resizing keeps both pipelines alive.
+			const VkPipelineViewportStateCreateInfo viewportState{.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, .viewportCount = 1U, .pViewports = nullptr, .scissorCount = 1U, .pScissors = nullptr};
+			constexpr std::array dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+			const VkPipelineDynamicStateCreateInfo dynamicState{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+				.dynamicStateCount = static_cast<std::uint32_t>(dynamicStates.size()),
+				.pDynamicStates = dynamicStates.data(),
+			};
+			const VkPipelineRasterizationStateCreateInfo rasterizer{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+				.polygonMode = VK_POLYGON_MODE_FILL,
+				.cullMode = static_cast<VkCullModeFlags>(depthOnly || fullscreen || tessellated || twoSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Capture preserves both sides of foliage; existing scene pipelines keep their culling policy.
+				.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+				.depthBiasEnable = depthOnly ? VK_TRUE : VK_FALSE,
+				.depthBiasConstantFactor = 1.25F,		///< Constant raster bias suppresses shadow depth quantization acne.
+				.depthBiasSlopeFactor = 1.75F,			///< Slope raster bias protects surfaces viewed obliquely by the light.
+				.lineWidth = 1.0F,
+			};
+			const VkPipelineMultisampleStateCreateInfo multisampling{.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = samples,
+				.sampleShadingEnable = sampleShading ? VK_TRUE : VK_FALSE, .minSampleShading = sampleShading ? 1.0F : 0.0F};
+			const VkPipelineColorBlendAttachmentState colorBlendAttachment{
+				.blendEnable = blended ? VK_TRUE : VK_FALSE,
+				.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,				///< Colour = src * alpha + dst * (1 - alpha).
+				.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+				.colorBlendOp = VK_BLEND_OP_ADD,
+				.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,						///< An opaque background stays opaque.
+				.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+				.alphaBlendOp = VK_BLEND_OP_ADD,
+				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+			};
+			const std::array blendAttachments{colorBlendAttachment, colorBlendAttachment, colorBlendAttachment};
+			const auto attachmentCount = depthOnly ? 0U : colorFormats.empty() ? 1U : static_cast<std::uint32_t>(colorFormats.size());
+			const VkPipelineColorBlendStateCreateInfo colorBlending{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+				.attachmentCount = attachmentCount,
+				.pAttachments = blendAttachments.data(),
+			};
+			const VkPipelineDepthStencilStateCreateInfo depthStencil{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+				.depthTestEnable = fullscreen ? VK_FALSE : VK_TRUE,
+				.depthWriteEnable = blended || fullscreen ? VK_FALSE : VK_TRUE,			///< Transparent surfaces do not hide what is drawn after them.
+				.depthCompareOp = VK_COMPARE_OP_LESS,
+			};
+			const VkPipelineRenderingCreateInfo renderingInfo{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+				.colorAttachmentCount = attachmentCount,
+				.pColorAttachmentFormats = colorFormats.empty() ? &colorAttachmentFormat : colorFormats.data(),
+				.depthAttachmentFormat = fullscreen ? VK_FORMAT_UNDEFINED : depthAttachmentFormat,
+			};
+			const VkGraphicsPipelineCreateInfo createInfo{
+				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+				.pNext = &renderingInfo,
+				.stageCount = stageCount,
+				.pStages = shaderStages.data(),
+				.pVertexInputState = &vertexInputState,
+				.pInputAssemblyState = &inputAssembly,
+				.pTessellationState = tessellated ? &tessellationState : nullptr,
+				.pViewportState = &viewportState,
+				.pRasterizationState = &rasterizer,
+				.pMultisampleState = &multisampling,
+				.pDepthStencilState = &depthStencil,
+				.pColorBlendState = &colorBlending,
+				.pDynamicState = &dynamicState,
+				.layout = pipelineLayout,
+			};
+			VkPipeline rawPipeline{VK_NULL_HANDLE};
+			const VkResult result = vkCreateGraphicsPipelines(owningDevice, VK_NULL_HANDLE, 1U, &createInfo, nullptr, &rawPipeline);
+			return pipeline.assign(owningDevice.handle, result, rawPipeline);
+		}
+
+		/// @brief Releases the owned graphics pipeline through its RAII wrapper.
+		void cleanup() { pipeline.reset(); }
+	};
+
+
+} // namespace vve::complex

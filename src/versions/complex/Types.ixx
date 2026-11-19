@@ -1,0 +1,102 @@
+export module VVEngine.Complex.Types;
+import std;
+export import VVEngine.Types;
+export import VVEngine.ECSContainer;
+
+/// @file
+/// @brief Vocabulary of the complex engine.
+///
+/// vve::complex is nested in vve, so the facade names exported by VVEngine.Types (Error, Vector, TypedHandle,
+/// SceneHandle, Transform, Camera, ...) are found by ordinary lookup. Only the math vocabulary lives in
+/// vve::math and is pulled into vve::complex here.
+export namespace vve::complex {
+
+	/// @brief Configured math scalar type used by the complex engine.
+	using Scalar = math::Scalar;
+	/// @brief Two-dimensional vector from the shared math vocabulary.
+	using Vec2 = math::Vec2;
+	/// @brief Three-dimensional vector from the shared math vocabulary.
+	using Vec3 = math::Vec3;
+	/// @brief Four-dimensional vector from the shared math vocabulary.
+	using Vec4 = math::Vec4;
+	/// @brief Quaternion from the shared math vocabulary.
+	using Quat = math::Quat;
+	/// @brief Four-by-four matrix from the shared math vocabulary.
+	using Mat4 = math::Mat4;
+
+	/// @brief Vertex payload shared by CPU render meshes and Vulkan vertex-input descriptions.
+	struct RenderVertex {
+		Vec3 position{math::zeroVec3()};											///< Object-space position.
+		Vec3 normal{math::zeroVec3()};												///< Object-space normal, or zero so the shader uses the face normal.
+		Vec2 uv{math::zero(), math::zero()};									///< First texture coordinate.
+		Vec4 tangent{math::zero(), math::zero(), math::zero(), math::zero()}; ///< Object-space tangent with handedness in w, or zero when absent.
+	};
+
+	/// @brief Texture roles shared by imported asset materials and CPU render materials.
+	enum class MaterialTextureSemantic : std::uint8_t {
+		base_color,			///< Surface base-color map.
+		normal,				///< Tangent-space normal map.
+		metalness,			///< Metallic response map.
+		roughness,			///< Surface roughness map.
+		emissive,			///< Self-illumination map.
+		ambient_occlusion,	///< Ambient-occlusion map.
+		height				///< Bump (height) map; only a colored image here is used, as a mislabeled normal map.
+	};
+
+	/// @brief Image data stored inside a model file (glTF binary, FBX) instead of a separate file.
+	struct EmbeddedImage {
+		std::vector<std::byte> bytes{};	///< Compressed image file bytes when extent is zero, otherwise tight RGBA8 pixels, top row first.
+		PixelExtent extent{};				///< Pixel size of raw RGBA8 data; zero for compressed bytes.
+	};
+
+	/// @brief One imported material texture with its renderer-facing semantic and canonical source path.
+	struct MaterialTextureSource {
+		MaterialTextureSemantic semantic{};	///< Renderer-facing texture role.
+		std::filesystem::path path{};			///< Canonical absolute image path, or a unique synthetic key for embedded images.
+		std::shared_ptr<const EmbeddedImage> embedded{};	///< Image data when the texture is embedded in the model file.
+	};
+
+	/// @brief How a material uses its alpha, as in glTF; the values are written to the GPU material.
+	enum class AlphaMode : std::uint8_t {
+		opaque,	///< Alpha is ignored.
+		mask,	///< Fragments with alpha below 0.5 are discarded, the rest are opaque.
+		blend	///< Alpha blends the surface over what lies behind it.
+	};
+
+	/// @brief Scalar material factors a model file may specify; absent values let the renderer pick defaults.
+	struct MaterialFactors {
+		std::optional<Scalar> roughness{};		///< Roughness factor.
+		std::optional<Scalar> metalness{};		///< Metalness factor.
+		std::optional<LinearColor> emissive{};	///< Emissive color factor.
+		std::optional<Scalar> opacity{};		///< Base-colour alpha or OBJ dissolve.
+		std::optional<AlphaMode> alpha_mode{};	///< glTF alpha mode.
+		std::optional<Scalar> alpha_cutoff{};	///< glTF mask cutoff; absent uses the shared default.
+		bool double_sided{};	///< Imported two-sided foliage; hybrid material passes light either face.
+	};
+
+	using math::add;
+	using math::clamp;
+	using math::cross;
+	using math::dot;
+	using math::identityMat4;
+	using math::identityQuat;
+	using math::inverse;
+	using math::length;
+	using math::lengthSquared;
+	using math::lookAt;
+	using math::max;
+	using math::min;
+	using math::multiply;
+	using math::normalize;
+	using math::one;
+	using math::oneVec3;
+	using math::orthoVulkan;
+	using math::perspective;
+	using math::perspectiveVulkan;
+	using math::scale;
+	using math::subtract;
+	using math::translate;
+	using math::zero;
+	using math::zeroVec3;
+
+} // namespace vve::complex

@@ -9,7 +9,6 @@ target_link_libraries(game PRIVATE
 
 add_dependencies(game
     ViennaVulkanEngine
-    vve_simple_shaders
 )
 
 vve_set_output_dirs(game)

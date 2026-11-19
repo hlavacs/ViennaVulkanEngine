@@ -1,13 +1,3 @@
-# Share test-only setup and capture helpers through a C++23 module.
-add_library(vve_test_support STATIC)
-target_compile_features(vve_test_support PUBLIC cxx_std_23)
-target_sources(vve_test_support PUBLIC FILE_SET CXX_MODULES FILES support/TestSupport.ixx)
-target_link_libraries(vve_test_support PUBLIC ViennaVulkanEngine::ViennaVulkanEngine Vulkan::Vulkan)
-
-# SDL/ImGui headers come from the engine; linking their static archives here duplicates runtime state.
-# Buffer policy and placement tests inspect VMA allocation flags directly.
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
-
 # GPU marks tests that require a window or Vulkan device; remaining arguments are link libraries.
 function(vve_add_engine_test name)
    cmake_parse_arguments(PARSE_ARGV 1 TEST "GPU" "" "")
@@ -22,7 +12,30 @@ function(vve_add_engine_test name)
    vve_set_output_dirs(${name})
 endfunction()
 
+# These tests exercise the facade without importing a concrete implementation.
 vve_add_engine_test(HandleTests)
+vve_add_engine_test(VectorTests)
+vve_add_engine_test(ECSTests)
+vve_add_engine_test(WindowOwnershipTests GPU)
+vve_add_engine_test(WorldTests GPU)
+vve_add_engine_test(UserSystemTests GPU)
+vve_add_engine_test(EngineBuilderTests)
+
+# The current white-box suite and its fixture module import VVEngine.Simple directly.
+if(NOT VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
+   return()
+endif()
+
+# Share test-only setup and capture helpers through a C++23 module.
+add_library(vve_test_support STATIC)
+target_compile_features(vve_test_support PUBLIC cxx_std_23)
+target_sources(vve_test_support PUBLIC FILE_SET CXX_MODULES FILES support/TestSupport.ixx)
+target_link_libraries(vve_test_support PUBLIC ViennaVulkanEngine::ViennaVulkanEngine Vulkan::Vulkan)
+
+# SDL/ImGui headers come from the engine; linking their static archives here duplicates runtime state.
+# Buffer policy and placement tests inspect VMA allocation flags directly.
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+
 vve_add_engine_test(AudioSystemTests)
 vve_add_engine_test(SpatialAudioTests)
 set_tests_properties(SpatialAudioTests PROPERTIES LABELS audio TIMEOUT 15)
@@ -35,9 +48,7 @@ set_tests_properties(AudioSystemTests PROPERTIES ENVIRONMENT "SDL_AUDIO_DRIVER=d
 add_test(NAME AudioInitFailureTests COMMAND AudioSystemTests --expect-init-failure)
 set_tests_properties(AudioInitFailureTests PROPERTIES
     ENVIRONMENT "SDL_AUDIO_DRIVER=vve_missing_audio_driver" LABELS audio TIMEOUT 15)
-vve_add_engine_test(VectorTests)
 vve_add_engine_test(GraphTests)
-vve_add_engine_test(ECSTests)
 if(TARGET vve_example_support)
    vve_add_engine_test(ExampleSupportTests vve_example_support)
 endif()
@@ -69,10 +80,6 @@ vve_add_engine_test(WindowMouseButtonTests GPU)
 vve_add_engine_test(WindowFullscreenTests GPU)
 vve_add_engine_test(WindowSetupDefaultsTests Vulkan::Vulkan)
 vve_add_engine_test(DefaultCameraControllerTests)
-vve_add_engine_test(WindowOwnershipTests GPU)
-vve_add_engine_test(WorldTests GPU)
-vve_add_engine_test(UserSystemTests GPU)
-vve_add_engine_test(EngineBuilderTests)
 # White-box tests import the simple implementation modules straight from the engine library; the inline
 # code they instantiate (e.g. simple::Engine's destructor) calls Vulkan directly, so they link it as well.
 # Tests that create windows open hidden SDL windows and use the platform video driver. SDL's offscreen driver only works

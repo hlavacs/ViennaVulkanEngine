@@ -1,0 +1,74 @@
+module;
+#include <compare>
+#include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
+#include "../shaders/complex_shared.h"
+
+export module VVEngine.Complex.Vulkan:Shadow;
+import :Memory;
+import std;
+
+/**
+	* @file
+	* @brief Shadow-map depth arrays for the complex forward renderer.
+	*
+	* Functional objects:
+	* - ShadowMap is a square D32 depth array with per-layer views and a comparison sampler; all shadow types share one pipeline.
+	*/
+export namespace vve::complex {
+
+	/// @brief Square D32 shadow-map array: the VulkanImage base owns image, whole-array view, and one view per layer.
+	struct ShadowMap : VulkanImage {
+		static constexpr std::uint32_t resolution{VVE_SHADOW_MAP_RESOLUTION}; ///< Fixed square shadow-map side length in pixels.
+		VkSampler shadowSampler{VK_NULL_HANDLE};          ///< Owned border-clamped comparison sampler.
+
+		ShadowMap() = default;
+		/// @brief Transfers the depth image, views and sampler to a new owner.
+		ShadowMap(ShadowMap &&other) noexcept : VulkanImage(std::move(other)), shadowSampler(std::exchange(other.shadowSampler, VK_NULL_HANDLE)) {}
+		/// @brief Replaces this shadow array without releasing resources transferred to retirement.
+		ShadowMap &operator=(ShadowMap &&other) noexcept {
+			if (this != &other) {
+				cleanup();
+				VulkanImage::operator=(std::move(other));
+				shadowSampler = std::exchange(other.shadowSampler, VK_NULL_HANDLE);
+			}
+			return *this;
+		}
+
+		/// @brief Creates the depth array, its views, and the comparison sampler.
+		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, std::uint32_t layers, std::uint32_t side = resolution) {
+			cleanup();
+			VkResult result = VulkanImage::create(allocator, owningDevice, VkExtent2D{.width = side, .height = side}, VK_FORMAT_D32_SFLOAT,
+																VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																VK_IMAGE_ASPECT_DEPTH_BIT, layers, true, true); // The shader always samples a 2D array, including the one-layer fallback.
+			if (result != VK_SUCCESS) { return result; }
+			const VkSamplerCreateInfo samplerInfo{
+				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				.magFilter = VK_FILTER_LINEAR,
+				.minFilter = VK_FILTER_LINEAR,
+				.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+				.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+				.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+				.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+				.compareEnable = VK_TRUE,
+				.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+				.minLod = 0.0F,
+				.maxLod = 1.0F,
+				.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+			};
+			result = vkCreateSampler(device, &samplerInfo, nullptr, &shadowSampler);
+			if (result != VK_SUCCESS) { cleanup(); }
+			return result;
+		}
+
+		/// @brief Destroys the sampler, views, and image.
+		void cleanup() {
+			if (shadowSampler != VK_NULL_HANDLE) { vkDestroySampler(device, shadowSampler, nullptr); }
+			shadowSampler = VK_NULL_HANDLE;
+			VulkanImage::cleanup();
+		}
+
+		~ShadowMap() { cleanup(); }
+	};
+
+} // namespace vve::complex

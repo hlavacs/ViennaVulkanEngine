@@ -143,18 +143,17 @@ The public facade is the C++ module `VVEngine` in namespace `vve` (sources in `s
 VVE_ENGINE_IMPLEMENTATION_NAMESPACE
 ```
 
-CMake compiles `src/implementations/<name>.ixx`, the only facade file that names the implementation, together with `src/versions/<name>/`. The facade keeps user code in namespace `vve`; implementation-specific code lives below the selected engine namespace (`vve::simple`).
+CMake compiles `src/implementations/<name>.ixx`, the only facade file that names the implementation, together with `src/versions/<name>/`. User code still uses namespace `vve`; implementation code lives in `vve::simple` or `vve::complex`.
 
-The active educational implementation is `simple`, and it is the only one;
-`v3`, `v4`, and `v5` are retired and are not built:
+`simple` remains the default. `complex` starts with the same behavior but owns its own source, modules, and shaders. Choose it in a separate build directory:
 
 ```powershell
 # in a Developer PowerShell for Visual Studio
-cmake --preset debug-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
-cmake --build --preset build-debug-windows
+cmake --preset release-windows -B build/complex-release-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=complex
+cmake --build build/complex-release-windows
 ```
 
-All example targets follow that single engine namespace selection automatically. The examples live in one folder each below `examples/`: `game`, `testscene`, `sponza`, `light_shadow_debug`, `simple_forward_demo`, and `postprocessing`.
+On Linux or macOS, use the matching host preset with the same cache variable. The example targets follow the selection automatically. For `complex`, executables go to `bin/complex/<configuration>/exe`; the `simple` output paths are unchanged. The existing facade tests can run against both implementations; the white-box suite currently targets `simple`.
 
 Link applications to `ViennaVulkanEngine::ViennaVulkanEngine`; it supplies the ImGui and SDL3 headers and compile settings. The engine owns their runtime linkage. Adding their static archives directly to an executable can create separate ImGui contexts and SDL window registries beside the shared engine. Windows static-engine builds propagate these dependencies through CMake automatically.
 

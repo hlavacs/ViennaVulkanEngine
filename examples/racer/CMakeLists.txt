@@ -23,7 +23,7 @@ endif()
 add_executable(racer racer.cpp)
 target_sources(racer PRIVATE FILE_SET CXX_MODULES FILES RacerScene.ixx RacerWorld.ixx RacerRace.ixx RacerSound.ixx RacerView.ixx)
 target_link_libraries(racer PRIVATE ViennaVulkanEngine::ViennaVulkanEngine vve_example_support racer_logic)
-add_dependencies(racer ViennaVulkanEngine vve_simple_shaders)
+add_dependencies(racer ViennaVulkanEngine)
 vve_set_output_dirs(racer)
 
 # The four game runs take a while, so they carry the label "racer" and the build scripts skip them (ctest -LE racer).

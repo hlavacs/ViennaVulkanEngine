@@ -9,7 +9,6 @@ target_link_libraries(testscene PRIVATE
 
 add_dependencies(testscene
     ViennaVulkanEngine
-    vve_simple_shaders
 )
 
 vve_set_output_dirs(testscene)

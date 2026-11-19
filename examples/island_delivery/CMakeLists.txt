@@ -17,7 +17,7 @@ target_link_libraries(island_delivery_game PUBLIC island_delivery_logic)
 add_executable(island_delivery island_delivery.cpp)
 target_link_libraries(island_delivery PRIVATE island_delivery_game vve_example_support)
 target_compile_definitions(island_delivery PRIVATE VVE_ISLAND_ASSET_DIR="${VVE_ISLAND_ASSET_DIR}")
-add_dependencies(island_delivery ViennaVulkanEngine vve_simple_shaders)
+add_dependencies(island_delivery ViennaVulkanEngine)
 vve_set_output_dirs(island_delivery)
 
 # Keep a built executable usable from any working directory, with licenses beside its downloaded assets.

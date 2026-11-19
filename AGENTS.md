@@ -25,7 +25,7 @@ User programs should only call into the facade layer. User programs are not allo
 
 The engine implementations are situated in the src/versions folder and are completely isolated from each other. This is the implementation layer. The meta engine is compiled with exactly one engine implementation. Each game engine is isolated with its own namespace. For instance, the simple engine lives in the namespace vve::simple, source files are located in folder src/versions/simple.
 
-When compiling their game, game apps are compiled and linked against the meta engine. Which engine implementation is used is selected at configure time by the CMake variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE. It names one file src/implementations/<name>.ixx (the module partition VVEngine:Implementation) and one directory src/versions/<name>/. The partition is the only facade file that imports the implementation module; it exports type aliases vve::detail::EngineImpl, AssetSystemImpl, RenderSystemImpl, WindowSystemImpl, WindowImpl, InputStateImpl, GuiSystemImpl, WindowsImpl plus vve::engineImplementationNamespaceName. No other facade file may name a concrete implementation namespace. Currently only the simple engine exists; earlier implementations (v3, v4, v5) were removed as dead code.
+When compiling their game, game apps are compiled and linked against the meta engine. Which engine implementation is used is selected at configure time by the CMake variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE. It names one file src/implementations/<name>.ixx (the module partition VVEngine:Implementation) and one directory src/versions/<name>/. The partition is the only facade file that imports the implementation module; it exports type aliases vve::detail::EngineImpl, AssetSystemImpl, RenderSystemImpl, WindowSystemImpl, WindowImpl, InputStateImpl, GuiSystemImpl, WindowsImpl plus vve::engineImplementationNamespaceName. No other facade file may name a concrete implementation namespace. The available implementations are simple (the default) and complex.
 
 Facades are defined in a facade pattern through wrapper classes and functions. Every class that is seen by the user lives in the facade layer as a wrapper. Wrappers have exactly one private member variable impl_ which is of type 
 ```cpp
@@ -180,7 +180,7 @@ Ignore the AGENTS.md files of other engines, only read and analyse the AGENTS.md
 Engines must be completely isolated from each other. One engine must never refer to another engine, or use something from another engine.
 If instructions say: use this from another engine, then do not make an alias etc ro anything of this engien. Instead create new functionality for the concrete engine but make it similar to the functionality of the referred engine.
 
-At configure time, the CMake cache variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE (default and currently only value: simple; set by the presets and build scripts) selects one of the engines available. 
+At configure time, the CMake cache variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE (simple by default; complex is also supported) selects one of the engines available.
 
 ## src/versions/simple
 

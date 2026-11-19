@@ -9,7 +9,6 @@ target_link_libraries(light_shadow_debug PRIVATE
 
 add_dependencies(light_shadow_debug
     ViennaVulkanEngine
-    vve_simple_shaders
 )
 
 vve_set_output_dirs(light_shadow_debug)

@@ -1,0 +1,258 @@
+module;
+#include <cstdio>
+#include <SDL3/SDL.h>
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <vulkan/vulkan_core.h>
+#if __has_include(<backends/imgui_impl_sdl3.h>)
+#include <backends/imgui_impl_sdl3.h>
+#else
+#include <imgui_impl_sdl3.h>
+#endif
+#if __has_include(<backends/imgui_impl_vulkan.h>)
+#include <backends/imgui_impl_vulkan.h>
+#else
+#include <imgui_impl_vulkan.h>
+#endif
+
+export module VVEngine.Complex:Gui;
+import std;
+export import VVEngine.Complex.Types;
+
+/// @file
+/// @brief Dear ImGui wrapper: one context, the SDL3 and Vulkan backends, one user frame callback and HUD images.
+
+export namespace vve::complex {
+
+	/// @brief Owns the Dear ImGui context and backend lifecycles for the complex engine.
+	class GuiSystem {
+	public:
+		auto draw(std::function<void()> frame)											-> void;
+		[[nodiscard]] auto configureFonts(std::function<void()> setup) -> std::expected<void, Error>;
+		auto initContext(VkFormat colorFormat = VK_FORMAT_UNDEFINED)					-> void;
+		auto initSDL(SDL_Window *window)													-> std::expected<void, Error>;
+		auto processEvent(const SDL_Event &event)								-> bool;
+		auto shutdownSDL()																		-> void;
+		auto initVulkan(ImGui_ImplVulkan_InitInfo *info)					-> std::expected<void, Error>;
+		auto shutdownVulkan()																-> void;
+		auto buildFonts()																		-> std::expected<void, Error>;
+		[[nodiscard]] auto prepareFrame(bool encodedOutput = false) -> bool;
+		auto record(VkCommandBuffer cmd, VkPipeline pipeline = VK_NULL_HANDLE) -> void;
+		auto shutdownContext()																	-> void;
+		[[nodiscard]] auto hasFrameCallback() const									-> bool;
+		[[nodiscard]] bool ready() const;
+		[[nodiscard]] bool takeFrameCallbackError();
+		/// @brief Engine-supplied image access: load into a texture slot, and the slot's sampler and view once uploaded.
+		using ImageLoader = std::function<std::expected<std::uint32_t, Error>(const std::filesystem::path &)>;
+		using ImageView = std::function<std::optional<std::pair<VkSampler, VkImageView>>(std::uint32_t)>;
+		auto setImageSource(ImageLoader load, ImageView view)						-> void;
+		[[nodiscard]] auto loadImage(const std::filesystem::path &path)		-> std::expected<GuiImageHandle, Error>;
+		[[nodiscard]] auto imageId(GuiImageHandle image) const					-> std::uint64_t;
+
+	private:
+		auto registerImages()																-> void;
+
+		ImageLoader loadImage_{};											///< Loads a HUD image into a renderer texture slot.
+		ImageView imageView_{};												///< Looks up an uploaded slot's sampler and view.
+		std::map<GuiImageHandle, std::pair<std::uint32_t, VkDescriptorSet>> images_{}; ///< Texture slot and ImGui descriptor, null until registered.
+		std::function<void()> frameCallback_{};						///< User frame callback stored for the future GUI backend.
+		std::function<void()> fontSetup_{}; ///< User font atlas setup, invoked once per new context before upload.
+		ImGuiContext *context_{nullptr};									///< Owned Dear ImGui context for this GUI system.
+		bool sdlBackendReady_{false};										///< SDL backend lifecycle state.
+		bool vulkanBackendReady_{false};								///< Vulkan backend lifecycle state.
+		bool fontsReady_{false};												///< Vulkan font atlas lifecycle state.
+		bool srgbTarget_{false}; ///< GUI fallback attachment encodes RGB without a mutable UNORM view.
+		bool linearTheme_{false}; ///< Theme currently carries the historical fallback's linear RGB values.
+		bool frameCallbackFailed_{false};									///< Callback error pending the next engine step.
+	};
+
+} // namespace vve::complex
+
+export namespace vve::complex {
+
+	/// @brief Stores the user callback that will build one immediate-mode GUI frame.
+	inline auto GuiSystem::draw(std::function<void()> frame) -> void { frameCallback_ = std::move(frame); }
+
+	/// @brief Stores optional font setup while no context exists; an initialized atlas cannot be changed safely.
+	inline auto GuiSystem::configureFonts(std::function<void()> setup) -> std::expected<void, Error> {
+		if (context_) { return std::unexpected(Error::already_initialized); }
+		fontSetup_ = std::move(setup);
+		return {};
+	}
+
+	/// @brief Creates the context once; an sRGB GUI target needs linear theme colours when mutable views are unavailable.
+	inline auto GuiSystem::initContext(VkFormat colorFormat) -> void {
+		if (!context_) {
+			context_ = ImGui::CreateContext();
+			ImGui::GetIO().IniFilename = nullptr; // Keep GUI layouts out of the working directory.
+			if (colorFormat == VK_FORMAT_B8G8R8A8_SRGB || colorFormat == VK_FORMAT_R8G8B8A8_SRGB) {
+				srgbTarget_ = linearTheme_ = true;
+				// Only the theme can be corrected here; user draw colours remain authored sRGB values.
+				const auto linear = [](float value) {
+					return value <= 0.04045F ? value / 12.92F : std::pow((value + 0.055F) / 1.055F, 2.4F);
+				};
+				for (auto &color : ImGui::GetStyle().Colors) {
+					color.x = linear(color.x); color.y = linear(color.y); color.z = linear(color.z);
+				}
+			}
+			// The atlas exists, but neither NewFrame nor GPU font upload has run.
+			if (fontSetup_) { fontSetup_(); }
+		}
+	}
+
+	/// @brief Initializes the SDL3 backend once; rejects null windows and reports backend failure.
+	inline auto GuiSystem::initSDL(SDL_Window *window) -> std::expected<void, Error> {
+		if (!window) { return std::unexpected(Error::invalid_argument); }
+		if (sdlBackendReady_) { return {}; }
+		if (!context_) { initContext(); }
+		if (!ImGui_ImplSDL3_InitForVulkan(window)) { return std::unexpected(Error::platform_error); }
+		sdlBackendReady_ = true;
+		return {};
+	}
+
+	/// @brief Forwards one SDL event to Dear ImGui and reports whether the GUI claims it.
+	///
+	/// Keyboard events are claimed while an ImGui widget wants the keyboard (a focused text field), mouse events
+	/// while the pointer is over a GUI window. The flags come from the previous ImGui frame, as ImGui intends.
+	inline auto GuiSystem::processEvent(const SDL_Event &event) -> bool {
+		if (!sdlBackendReady_) { return false; }
+		ImGui_ImplSDL3_ProcessEvent(&event);
+		const ImGuiIO &io = ImGui::GetIO();
+		switch (event.type) {
+		case SDL_EVENT_KEY_DOWN:
+		case SDL_EVENT_TEXT_INPUT: return io.WantCaptureKeyboard;
+		case SDL_EVENT_MOUSE_MOTION:
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+		case SDL_EVENT_MOUSE_WHEEL: return io.WantCaptureMouse;
+		default: return false;
+		}
+	}
+
+	/// @brief Shuts down the Dear ImGui SDL3 backend when it was initialized.
+	inline auto GuiSystem::shutdownSDL() -> void {
+		if (!sdlBackendReady_) { return; }
+		ImGui_ImplSDL3_Shutdown();
+		sdlBackendReady_ = false;
+	}
+
+	/// @brief Initializes Vulkan after SDL3; reports invalid data, missing prerequisites or backend failure.
+	inline auto GuiSystem::initVulkan(ImGui_ImplVulkan_InitInfo *info) -> std::expected<void, Error> {
+		if (!info) { return std::unexpected(Error::invalid_argument); }
+		if (!sdlBackendReady_) { return std::unexpected(Error::not_initialized); }
+		if (vulkanBackendReady_) { return {}; }
+		if (!ImGui_ImplVulkan_Init(info)) { return std::unexpected(Error::platform_error); }
+		vulkanBackendReady_ = true;
+		return {};
+	}
+
+	/// @brief Shuts down the Dear ImGui Vulkan backend when it was initialized.
+	inline auto GuiSystem::shutdownVulkan() -> void {
+		if (!vulkanBackendReady_) { return; }
+		for (auto &image : images_) { image.second.second = VK_NULL_HANDLE; } // Descriptors die with the backend's pool.
+		ImGui_ImplVulkan_Shutdown();
+		vulkanBackendReady_ = false;
+		fontsReady_ = false;
+	}
+
+	/// @brief Uploads fonts once; reports a missing Vulkan backend or an upload failure.
+	inline auto GuiSystem::buildFonts() -> std::expected<void, Error> {
+		if (!vulkanBackendReady_) { return std::unexpected(Error::not_initialized); }
+		if (fontsReady_) { return {}; }
+		if (!ImGui_ImplVulkan_CreateFontsTexture()) { return std::unexpected(Error::platform_error); }
+		fontsReady_ = true;
+		return {};
+	}
+
+	/// @brief Builds GUI draw data, recovering callback exceptions; reports whether any vertices need recording.
+	inline auto GuiSystem::prepareFrame(bool encodedOutput) -> bool {
+		if (!ready()) { return false; }
+		// Opt-in fallback shaders decode authored widget/texture colours; restore the theme's authored RGB too.
+		if (srgbTarget_ && linearTheme_ == encodedOutput) {
+			const auto convert = [encodedOutput](float value) {
+				return encodedOutput ? (value <= .0031308F ? value * 12.92F : 1.055F * std::pow(value, 1.F/2.4F) - .055F)
+					: (value <= .04045F ? value / 12.92F : std::pow((value + .055F) / 1.055F, 2.4F));
+			};
+			for (auto &color : ImGui::GetStyle().Colors) { color.x = convert(color.x); color.y = convert(color.y); color.z = convert(color.z); }
+			linearTheme_ = !encodedOutput;
+		}
+		registerImages();
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
+		ImGui::NewFrame();
+		// Preserve the GUI stacks so a callback exception can leave the frame safe to render.
+		if (frameCallback_) {
+			ImGuiErrorRecoveryState state{};
+			ImGui::ErrorRecoveryStoreState(&state);
+			try { frameCallback_(); }
+			catch (const std::exception &error) {
+				if (!frameCallbackFailed_) { std::println(stderr, "[vve::complex] GUI callback failed: {}", error.what()); }
+				frameCallbackFailed_ = true;
+				// Missing End/Pop calls are expected here; restore normal assertions after recovery.
+				auto &io = ImGui::GetIO();
+				const bool recovery_assert = std::exchange(io.ConfigErrorRecoveryEnableAssert, false);
+				ImGui::ErrorRecoveryTryToRecoverState(&state);
+				io.ConfigErrorRecoveryEnableAssert = recovery_assert;
+			}
+		}
+		ImGui::Render();
+		return ImGui::GetDrawData()->TotalVtxCount > 0;
+	}
+
+	/// @brief Records prepared draw data inside the GUI rendering pass without invoking the callback again.
+	inline auto GuiSystem::record(VkCommandBuffer cmd, VkPipeline pipeline) -> void {
+		if (!ready()) { return; }
+		auto *data = ImGui::GetDrawData();
+		if (data && data->TotalVtxCount > 0) { ImGui_ImplVulkan_RenderDrawData(data, cmd, pipeline); }
+	}
+
+	/// @brief Destroys the owned Dear ImGui context when it exists.
+	inline auto GuiSystem::shutdownContext() -> void {
+		if (context_) {
+			ImGui::DestroyContext(context_);
+			context_ = nullptr;
+			srgbTarget_ = linearTheme_ = false;
+		}
+	}
+
+	/// @brief Returns whether a frame callback is currently stored.
+	inline bool GuiSystem::hasFrameCallback() const { return static_cast<bool>(frameCallback_); }
+
+	/// @brief Reports whether the context, both backends and font atlas can record GUI frames.
+	inline bool GuiSystem::ready() const { return context_ && sdlBackendReady_ && vulkanBackendReady_ && fontsReady_; }
+
+	/// @brief Consumes a recovered callback error so the engine reports it exactly once.
+	inline bool GuiSystem::takeFrameCallbackError() { return std::exchange(frameCallbackFailed_, false); }
+
+	/// @brief Stores how HUD images reach the renderer's texture table; the engine sets it once.
+	inline auto GuiSystem::setImageSource(ImageLoader load, ImageView view) -> void {
+		loadImage_ = std::move(load);
+		imageView_ = std::move(view);
+	}
+
+	/// @brief Loads one HUD image; without an engine image source it reports not_initialized.
+	inline auto GuiSystem::loadImage(const std::filesystem::path &path) -> std::expected<GuiImageHandle, Error> {
+		if (!loadImage_) { return std::unexpected(Error::not_initialized); }
+		const auto slot = loadImage_(path);
+		if (!slot) { return std::unexpected(slot.error()); }
+		const auto handle = makeCounterHandle<GuiImageHandle>();
+		images_.emplace(handle, std::pair{*slot, VkDescriptorSet{VK_NULL_HANDLE}});
+		return handle;
+	}
+
+	/// @brief Returns the registered ImGui descriptor as ImTextureID, or 0 while it is not registered.
+	inline auto GuiSystem::imageId(GuiImageHandle image) const -> std::uint64_t {
+		const auto found = images_.find(image);
+		return found == images_.end() ? 0U : reinterpret_cast<std::uint64_t>(found->second.second);
+	}
+
+	/// @brief Registers every uploaded, not yet registered image with the Vulkan backend before the frame callback runs.
+	inline auto GuiSystem::registerImages() -> void {
+		for (auto &[handle, image] : images_) {
+			if (image.second != VK_NULL_HANDLE || !imageView_) { continue; }
+			if (const auto view = imageView_(image.first)) {
+				image.second = ImGui_ImplVulkan_AddTexture(view->first, view->second, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}
+		}
+	}
+
+} // namespace vve::complex
