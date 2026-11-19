@@ -5,7 +5,7 @@ rem Builds the Vienna Vulkan Engine on Windows using the Ninja generator, which
 rem is required for C++23 `import std` (the Visual Studio generator does not
 rem support it). Mirrors build_linux.sh.
 rem
-rem Usage: build_windows.cmd [debug|release] [--clean] [--no-tests] [--docs]
+rem Usage: build_windows.cmd [debug|release] [--complex|--simple] [--clean] [--no-tests] [--docs]
 rem Requires: Vulkan SDK (VULKAN_SDK set), CMake, Visual Studio 2022+ with the
 rem           C++ workload (provides cl, CMake, CTest, and Ninja), and vcpkg.
 rem From PowerShell: .\build_windows.cmd debug
@@ -13,6 +13,7 @@ rem From PowerShell: .\build_windows.cmd debug
 pushd "%~dp0" || exit /b 1
 
 set "VARIANT=release"
+set "ENGINE=complex"
 set "CLEAN=0"
 set "RUN_TESTS=1"
 set "BUILD_DOCS=0"
@@ -20,13 +21,18 @@ set "STAGE=Prerequisite checks"
 
 :parse
 if "%~1"=="" goto done_parse
-if /I "%~1"=="debug" (set "VARIANT=debug") else if /I "%~1"=="release" (set "VARIANT=release") else if /I "%~1"=="--clean" (set "CLEAN=1") else if /I "%~1"=="--no-tests" (set "RUN_TESTS=0") else if /I "%~1"=="--docs" (set "BUILD_DOCS=1") else if /I "%~1"=="-h" (goto usage) else if /I "%~1"=="--help" (goto usage) else (echo Unknown argument: %~1 & goto usage)
+if /I "%~1"=="debug" (set "VARIANT=debug") else if /I "%~1"=="release" (set "VARIANT=release") else if /I "%~1"=="--simple" (set "ENGINE=simple") else if /I "%~1"=="--complex" (set "ENGINE=complex") else if /I "%~1"=="--clean" (set "CLEAN=1") else if /I "%~1"=="--no-tests" (set "RUN_TESTS=0") else if /I "%~1"=="--docs" (set "BUILD_DOCS=1") else if /I "%~1"=="-h" (goto usage) else if /I "%~1"=="--help" (goto usage) else (echo Unknown argument: %~1 & goto usage)
 shift
 goto parse
 :done_parse
 
 if /I "%VARIANT%"=="debug" (set "CONFIG=Debug") else (set "CONFIG=Release")
 set "BUILD_DIR=build\%VARIANT%-windows"
+set "OUTPUT_DIR=bin\%VARIANT%"
+if "%ENGINE%"=="complex" (
+    set "BUILD_DIR=build\complex-%VARIANT%-windows"
+    set "OUTPUT_DIR=bin\complex\%VARIANT%"
+)
 
 if not defined VULKAN_SDK if defined VK_SDK_PATH set "VULKAN_SDK=%VK_SDK_PATH%"
 if not defined VULKAN_SDK (echo VULKAN_SDK is not set. Install the Vulkan SDK first. & goto fail)
@@ -75,7 +81,7 @@ set "STAGE=CMake configuration"
 cmake -S . -B "%BUILD_DIR%" -G Ninja ^
     -DCMAKE_BUILD_TYPE=%CONFIG% ^
     -DVVE_DEFAULT_VULKAN_ICD=system ^
-    -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple ^
+    -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=%ENGINE% ^
     -DVVE_VCPKG_TRIPLET=x64-windows
 if errorlevel 1 goto fail
 
@@ -97,12 +103,12 @@ if "%RUN_TESTS%"=="1" (
 )
 
 echo.
-echo %CONFIG% build complete. Executables: bin\%VARIANT%\exe
+echo %ENGINE% %CONFIG% build complete. Executables: %OUTPUT_DIR%\exe
 popd
 exit /b 0
 
 :usage
-echo Usage: .\%~nx0 [debug^|release] [--clean] [--no-tests] [--docs]   (default: release)
+echo Usage: .\%~nx0 [debug^|release] [--complex^|--simple] [--clean] [--no-tests] [--docs]   [default: complex release]
 popd
 exit /b 1
 

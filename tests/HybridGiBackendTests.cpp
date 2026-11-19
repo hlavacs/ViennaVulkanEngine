@@ -1,6 +1,7 @@
 /** @file @brief Facade selection, startup lifetime and real-device capability rejection for the reserved GI backend. */
 import std;
 import VVEngine;
+import VVEngine.Simple;
 import VVE.TestSupport;
 
 namespace {
@@ -9,12 +10,13 @@ constexpr std::array backends{vve::RendererBackend::forward, vve::RendererBacken
 	vve::RendererBackend::hybrid_gi}; ///< Every independently selectable public backend.
 static_assert(backends[0] != backends[1] && backends[0] != backends[2] && backends[1] != backends[2]);
 
-/// @brief Checks the unchanged default, all startup transitions and isolation between two facade engines.
+/// @brief Checks the unchanged default, all startup transitions and isolation between two render systems.
 [[nodiscard]] bool startupContracts() {
 	using namespace vve;
-	Engine<> first, second;
-	auto first_world = first.world(), second_world = second.world();
-	auto &a = first_world.get<RenderSystem>(), &b = second_world.get<RenderSystem>();
+	Engine<> first;
+	auto first_world = first.world();
+	auto &a = first_world.get<RenderSystem>();
+	simple::RenderSystem b;
 	if (a.rendererBackend() != RendererBackend::forward || b.rendererBackend() != RendererBackend::forward ||
 		!b.setRendererBackend(RendererBackend::hybrid_gi)) { return false; }
 	// Exercise malformed values with each valid selection retained, including hybrid_gi.

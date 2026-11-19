@@ -119,9 +119,11 @@ int main(int argc, char **argv) {
     const std::filesystem::path output = measuring ? argv[2] : "";
     if (measuring) std::filesystem::create_directories(output);
     // Compile and check the forwarding facade, including invalid-window error behavior before startup.
-    Engine<> facade; auto world = facade.world(); auto &api = world.get<RenderSystem>();
-    api.setGpuTimingReadback(true);
-    if (auto invalid = api.renderDiagnostics({}); invalid || invalid.error() != Error::invalid_handle) return 2;
+    {
+        Engine<> facade; auto world = facade.world(); auto &api = world.get<RenderSystem>();
+        api.setGpuTimingReadback(true);
+        if (auto invalid = api.renderDiagnostics({}); invalid || invalid.error() != Error::invalid_handle) return 2;
+    }
     for (auto aa : {Antialiasing::none,Antialiasing::msaa4}) {
         std::optional<std::array<double,3>> baseline;
         for (std::string_view preset : {"deferred","low","medium"}) {

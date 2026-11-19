@@ -4,19 +4,19 @@
     {
       "name": "debug-base",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "binaryDir": "${sourceDir}/build/complex-${presetName}",
       "cacheVariables": {
         "VVE_DEFAULT_VULKAN_ICD": "system",
-        "VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "simple"
+        "VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "complex"
       }
     },
     {
       "name": "release-base",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "binaryDir": "${sourceDir}/build/complex-${presetName}",
       "cacheVariables": {
         "VVE_DEFAULT_VULKAN_ICD": "system",
-        "VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "simple"
+        "VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "complex"
       }
     },
     {

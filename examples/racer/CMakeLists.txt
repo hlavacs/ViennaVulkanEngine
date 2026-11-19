@@ -28,7 +28,7 @@ vve_set_output_dirs(racer)
 
 # The four game runs take a while, so they carry the label "racer" and the build scripts skip them (ctest -LE racer).
 # Run them with: ctest --test-dir <build directory> -L racer --output-on-failure
-if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
+if(BUILD_TESTING)
     # Bounded autopilot run: 15 s of racing, a capture and a verification file; fails on a wall breach or a bad pick.
     vve_add_renderer_example_test(RacerExample racer --frames 900 --autopilot --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/racer.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/racer.txt")

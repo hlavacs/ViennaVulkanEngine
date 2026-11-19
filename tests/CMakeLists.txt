@@ -1,7 +1,35 @@
+# Keep one set of assertions and fixtures. Only the implementation references
+# in white-box sources and their support headers differ between the engines.
+function(vve_engine_test_source output relative_path)
+   set(source "${CMAKE_CURRENT_SOURCE_DIR}/${relative_path}")
+   if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex")
+      set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source}")
+      file(READ "${source}" contents)
+      string(REPLACE "VVEngine.Simple" "VVEngine.Complex" contents "${contents}")
+      string(REPLACE "vve::simple" "vve::complex" contents "${contents}")
+      string(REPLACE "simple::" "complex::" contents "${contents}")
+      string(REPLACE "src/versions/simple/shaders/simple_shared.h"
+         "src/versions/complex/shaders/complex_shared.h" contents "${contents}")
+      set(source "${CMAKE_CURRENT_BINARY_DIR}/selected-engine/${relative_path}")
+      file(CONFIGURE OUTPUT "${source}" CONTENT "@contents@" @ONLY)
+   endif()
+   set(${output} "${source}" PARENT_SCOPE)
+endfunction()
+
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "complex")
+   file(GLOB support_headers CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "support/*.hpp")
+   foreach(header IN LISTS support_headers)
+      vve_engine_test_source(generated_header "${header}")
+   endforeach()
+endif()
+
 # GPU marks tests that require a window or Vulkan device; remaining arguments are link libraries.
 function(vve_add_engine_test name)
    cmake_parse_arguments(PARSE_ARGV 1 TEST "GPU" "" "")
-   add_executable(${name} ${name}.cpp)
+   vve_engine_test_source(source "${name}.cpp")
+   add_executable(${name} "${source}")
+   # Source-relative includes outside the generated tree still resolve from tests/.
+   target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
    # Keep fixtures isolated between tests and build trees.
    target_compile_definitions(${name} PRIVATE VVE_TEST_TMP_DIR="${CMAKE_CURRENT_BINARY_DIR}/tmp/${name}")
    target_link_libraries(${name} PRIVATE ViennaVulkanEngine::ViennaVulkanEngine ${TEST_UNPARSED_ARGUMENTS})
@@ -12,7 +40,6 @@ function(vve_add_engine_test name)
    vve_set_output_dirs(${name})
 endfunction()
 
-# These tests exercise the facade without importing a concrete implementation.
 vve_add_engine_test(HandleTests)
 vve_add_engine_test(VectorTests)
 vve_add_engine_test(ECSTests)
@@ -21,15 +48,13 @@ vve_add_engine_test(WorldTests GPU)
 vve_add_engine_test(UserSystemTests GPU)
 vve_add_engine_test(EngineBuilderTests)
 
-# The current white-box suite and its fixture module import VVEngine.Simple directly.
-if(NOT VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
-   return()
-endif()
-
 # Share test-only setup and capture helpers through a C++23 module.
+vve_engine_test_source(test_support_module "support/TestSupport.ixx")
+get_filename_component(test_support_directory "${test_support_module}" DIRECTORY)
 add_library(vve_test_support STATIC)
 target_compile_features(vve_test_support PUBLIC cxx_std_23)
-target_sources(vve_test_support PUBLIC FILE_SET CXX_MODULES FILES support/TestSupport.ixx)
+target_sources(vve_test_support PUBLIC FILE_SET CXX_MODULES
+   BASE_DIRS "${test_support_directory}" FILES "${test_support_module}")
 target_link_libraries(vve_test_support PUBLIC ViennaVulkanEngine::ViennaVulkanEngine Vulkan::Vulkan)
 
 # SDL/ImGui headers come from the engine; linking their static archives here duplicates runtime state.
@@ -80,8 +105,8 @@ vve_add_engine_test(WindowMouseButtonTests GPU)
 vve_add_engine_test(WindowFullscreenTests GPU)
 vve_add_engine_test(WindowSetupDefaultsTests Vulkan::Vulkan)
 vve_add_engine_test(DefaultCameraControllerTests)
-# White-box tests import the simple implementation modules straight from the engine library; the inline
-# code they instantiate (e.g. simple::Engine's destructor) calls Vulkan directly, so they link it as well.
+# White-box tests import the selected implementation modules from the engine library; the inline
+# code they instantiate calls Vulkan directly, so they link it as well.
 # Tests that create windows open hidden SDL windows and use the platform video driver. SDL's offscreen driver only works
 # with Vulkan drivers that support VK_EXT_headless_surface, so build_linux.sh selects it only without a display.
 vve_add_engine_test(SimpleForwardRendererTests GPU Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator vve_test_support)
@@ -216,7 +241,7 @@ vve_add_engine_test(RenderSceneLightApplyTests vve_test_support)
 vve_add_engine_test(RenderSceneCameraApplyTests vve_test_support)
 
 # One build contains both backends; facade contracts and paired captures choose them at runtime.
-vve_add_engine_test(RendererBackendTests GPU)
+vve_add_engine_test(RendererBackendTests GPU Vulkan::Vulkan)
 vve_add_engine_test(DeferredRendererTests GPU Vulkan::Vulkan vve_test_support)
 target_compile_definitions(DeferredRendererTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")

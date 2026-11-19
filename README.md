@@ -5,7 +5,8 @@
 ## Automated compilation checks
 
 The [Build workflow](.github/workflows/build.yml) compiles and links the engine, examples,
-games and test executables on every push and pull request. It runs six jobs:
+games and test executables on every push and pull request. It runs 12 jobs: both engine
+implementations per platform and configuration.
 
 | Platform | Runner | Compiler | Configurations |
 | --- | --- | --- | --- |
@@ -39,7 +40,7 @@ checks package ABI hashes. Failed jobs upload build and dependency logs for 14 d
 Independent jobs keep running if one platform fails, and a new push cancels the previous
 run for the same branch or pull request.
 
-After pushing the workflow, open the repository's Actions tab to inspect all six jobs.
+After pushing the workflow, open the repository's Actions tab to inspect the jobs for both engines.
 Manual runs are available through Run workflow once this file is on the default branch.
 No repository secrets are needed for these public dependency downloads. GPU runtime
 checks can be added separately with a suitable driver and presentation setup.
@@ -104,11 +105,11 @@ From an ordinary PowerShell window in the repository, run:
 
 Install Visual Studio with the C++ workload and C++ CMake tools, the Vulkan SDK, and vcpkg first. The script discovers the Visual Studio tools, finds vcpkg through `VCPKG_ROOT`, `PATH`, or `C:\vcpkg`, and runs `vcpkg install --triplet x64-windows` on every build so changed manifests are applied. It then configures, compiles, and runs the tests. Repeat the same command to rebuild and retest; no separate CTest path setup is needed. PowerShell requires the leading `.\` for scripts in the current directory.
 
-On Windows, the renderer handles the AMD switchable-graphics workaround at run time. If Vulkan instance creation or physical-device selection fails and `VK_LAYER_AMD_switchable_graphics` is installed but not already listed in `VK_LOADER_LAYERS_DISABLE`, it appends that layer to the process's existing filters, releases the failed initialization resources, logs one compatibility message, and retries once. This also works when `bin\debug\exe\game.exe` is launched from Explorer; it needs no build-machine probe or rebuild after a driver change.
+On Windows, the renderer handles the AMD switchable-graphics workaround at run time. If Vulkan instance creation or physical-device selection fails and `VK_LAYER_AMD_switchable_graphics` is installed but not already listed in `VK_LOADER_LAYERS_DISABLE`, it appends that layer to the process's existing filters, releases the failed initialization resources, logs one compatibility message, and retries once. This also works when `bin\complex\debug\exe\game.exe` is launched from Explorer; it needs no build-machine probe or rebuild after a driver change.
 
 Set `VVE_DISABLE_AMD_SWITCHABLE_GRAPHICS=1` in the application's environment to apply the filter before its first Vulkan instance is created (in PowerShell: `$env:VVE_DISABLE_AMD_SWITCHABLE_GRAPHICS = '1'`). Only this opt-in helps if the layer crashes the process instead of returning an error. Existing layer filters are preserved in both paths.
 
-Use `release` instead of `debug` for a release build (`release` is also the default without an argument), `--no-tests` to omit tests, `--docs` to also generate the Doxygen documentation, or `--clean` to recreate that variant's build directory. The script uses the Ninja generator with MSVC and the build directory `build\<variant>-windows`. Prerequisite, dependency, configure, compile, and test failures are identified separately.
+Use `release` instead of `debug` for a release build (`release` is also the default without an argument), `--simple` to select Simple Engine, `--no-tests` to skip running CTest, `--docs` to generate the Doxygen documentation, or `--clean` to recreate the selected build directory. MSVC builds use Ninja and `build\complex-<variant>-windows` by default, or `build\<variant>-windows` with `--simple`.
 
 CMake supports `import std` only with Ninja generators, not with the Visual Studio generators. The `debug-windows` and `release-windows` presets therefore also use Ninja with MSVC and the same build directories as the script. They need the compiler environment of Visual Studio: run them from a Developer PowerShell for Visual Studio (or open the folder in Visual Studio, which sets that environment up), not from an ordinary PowerShell window.
 
@@ -120,7 +121,7 @@ For ICODA analysis, build a separate Clang version after installing the dependen
 
 This requires Visual Studio's LLVM and CMake components. It configures the `debug-clang` Ninja preset,
 builds the engine, examples and Microsoft's standard-library modules with Clang, and runs CTest.
-The compilation database is `build/debug-clang/compile_commands.json`; reload VVE in ICODA after the build.
+The compilation database is `build/complex-debug-clang/compile_commands.json`; reload VVE in ICODA after the build.
 Use the libclang shipped with that same LLVM installation. Extra CMake options can be passed to the script.
 
 All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The CMake option `VVE_MATH_USE_DOUBLE` (default `OFF`) selects the scalar type of that layer: `float` with `OFF`, `double` with `ON`. The simple engine currently requires `OFF`: its GPU mirror structs (`RenderVertex`, `FrameUniforms`, `GpuMaterial`) must match the `float` shader layouts, and `static_assert`s stop a build with `VVE_MATH_USE_DOUBLE=ON`.
@@ -130,7 +131,7 @@ All engine math should go through the exported `vve::math` abstraction layer ins
 The engine links against the Vulkan loader, not directly against individual drivers, and the loader chooses the driver (ICD). On macOS, CMake writes ICD manifests for the drivers shipped with the Vulkan SDK into the build directory: `<build>/vulkan/icd.d/libkosmickrisp_icd.json` for KosmicKrisp and `<build>/vulkan/icd.d/MoltenVK_icd.json` for MoltenVK. To run on KosmicKrisp, point the loader at its manifest when launching:
 
 ```bash
-VK_ICD_FILENAMES=build/debug-macos/vulkan/icd.d/libkosmickrisp_icd.json bin/debug/exe/testscene
+VK_ICD_FILENAMES=build/complex-debug-macos/vulkan/icd.d/libkosmickrisp_icd.json bin/complex/debug/exe/testscene
 ```
 
 The VS Code macOS launch entries and `tools/vscode/run-ctest.sh` set `VK_ICD_FILENAMES` this way, and CTest runs `PostProcessingSmokeTests` with `VK_DRIVER_FILES` pointing to the KosmicKrisp manifest. The engine itself does not choose an ICD at run time. The cache variable `VVE_DEFAULT_VULKAN_ICD` (`system`, `moltenvk`, or `kosmickrisp`; the macOS presets and `build_macos.sh` set `kosmickrisp`) and the manifest paths are passed to the engine library as compile definitions, but the simple engine does not read them. There are no `VVE_VULKAN_ICD` or `VVE_KOSMICKRISP_ICD` environment variables. On macOS, SDL is told to load the Vulkan loader library that CMake found (`SDL_HINT_VULKAN_LIBRARY`).
@@ -145,15 +146,15 @@ VVE_ENGINE_IMPLEMENTATION_NAMESPACE
 
 CMake compiles `src/implementations/<name>.ixx`, the only facade file that names the implementation, together with `src/versions/<name>/`. User code still uses namespace `vve`; implementation code lives in `vve::simple` or `vve::complex`.
 
-`simple` remains the default. `complex` starts with the same behavior but owns its own source, modules, and shaders. Choose it in a separate build directory:
+`complex` is the default. Select `simple` with `--simple` in any of the three platform build scripts, or override the CMake selector in a separate build directory:
 
 ```powershell
 # in a Developer PowerShell for Visual Studio
-cmake --preset release-windows -B build/complex-release-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=complex
-cmake --build build/complex-release-windows
+cmake --preset release-windows -B build/release-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
+cmake --build build/release-windows
 ```
 
-On Linux or macOS, use the matching host preset with the same cache variable. The example targets follow the selection automatically. For `complex`, executables go to `bin/complex/<configuration>/exe`; the `simple` output paths are unchanged. The existing facade tests can run against both implementations; the white-box suite currently targets `simple`.
+On Linux or macOS, use the matching host preset with the same cache variable. Examples and tests follow the selected engine. Both implementations register the same tests on a given platform and configuration, including renderer and image-quality tests. The white-box tests use build-local sources with implementation references switched to the selected engine; fixtures and assertions are shared.
 
 Link applications to `ViennaVulkanEngine::ViennaVulkanEngine`; it supplies the ImGui and SDL3 headers and compile settings. The engine owns their runtime linkage. Adding their static archives directly to an executable can create separate ImGui contexts and SDL window registries beside the shared engine. Windows static-engine builds propagate these dependencies through CMake automatically.
 
@@ -182,7 +183,7 @@ Before the first build, run:
 # (or: vcpkg install --triplet arm64-osx; cmake --preset debug-macos; cmake --build --preset build-debug-macos)
 ```
 
-`build_linux.sh` and `build_macos.sh` accept `debug` or `release` (the default) and `--clean`. They use the build directories `build/<variant>-linux` and `build/macos-<variant>`. The presets use `build/<preset name>`.
+`build_linux.sh` and `build_macos.sh` accept `debug` or `release` (the default), `--simple`, `--clean` and `--no-tests`. The default build directories are `build/complex-<variant>-linux` and `build/complex-<variant>-macos`. With `--simple`, the scripts use `build/<variant>-linux` and `build/macos-<variant>` respectively. The default presets use `build/complex-<preset name>`.
 
 A parent project using `add_subdirectory(ViennaVulkanEngine)` must set `CMAKE_EXPERIMENTAL_CXX_IMPORT_STD` to the gate UUID for its CMake version and `CMAKE_CXX_MODULE_STD` to `ON`, using normal variables before its own `project()`; VVE's settings stay in its directory scope.
 
@@ -193,11 +194,11 @@ cmake --preset release-macos-arm64-llvm
 cmake --build --preset build-release-macos-arm64-llvm
 ```
 
-Executables are written to the project root `bin` directory, below a path that uses only the build variant, for example `bin/debug/exe/testscene` or `bin/release/exe/testscene`. Shared libraries (Linux, macOS) are built below the selected build directory and mirrored to `bin/<variant>/lib`. Platform names such as `Mac`, `Windows`, or `Linux` are not used below `bin`. The `light_shadow_debug` example writes its verification text and PNG to `bin/<variant>/verify`.
+Complex executables are written to `bin/complex/<variant>/exe`; Simple executables stay in `bin/<variant>/exe`. Shared libraries on Linux and macOS are mirrored to the corresponding `lib` directory next to `exe`. Verification output follows the selected engine's output directory.
 
-VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/vscode-debug` and `build/vscode-release` and always the Ninja generator (needed for `import std`). The vcpkg triplet comes from the selected kit, or else from the host default in CMakeLists.txt (`x64-windows`, `x64-linux-llvm`, `arm64-osx`). Select these kits: `Homebrew LLVM arm64` on Apple Silicon macOS, `LLVM 18 libc++ (Linux)` on Linux (both defined in `.vscode/cmake-kits.json`), and a Visual Studio `amd64` kit on Windows.
+VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/complex-vscode-debug` and `build/complex-vscode-release` and always the Ninja generator (needed for `import std`). The vcpkg triplet comes from the selected kit, or else from the host default in CMakeLists.txt (`x64-windows`, `x64-linux-llvm`, `arm64-osx`). Select these kits: `Homebrew LLVM arm64` on Apple Silicon macOS, `LLVM 18 libc++ (Linux)` on Linux (both defined in `.vscode/cmake-kits.json`), and a Visual Studio `amd64` kit on Windows.
 
-The VS Code Run and Debug list contains `Windows Debug (choose executable)`, `game`, `testscene`, `postprocessing`, `sponza`, `world tests`, and `all tests`. Except for the first one, each launch asks for `Platform` (`Mac`, `Windows`, `Linux`) and `Variant` (`debug`, `release`) and then runs the matching build task before launch. The Windows-only first entry builds the Windows debug variant and asks which executable to debug. Select the platform that matches the machine running VS Code; these launch options are shared across operating systems, not cross-compilers. On macOS the launch entries set `VK_ICD_FILENAMES` to the KosmicKrisp manifest in `build/vscode-<variant>`.
+The VS Code Run and Debug list contains `Windows Debug (choose executable)`, `game`, `testscene`, `postprocessing`, `sponza`, `world tests`, and `all tests`. Except for the first one, each launch asks for `Platform` (`Mac`, `Windows`, `Linux`) and `Variant` (`debug`, `release`) and then runs the matching build task before launch. The Windows-only first entry builds the Windows debug variant and asks which executable to debug. Select the platform that matches the machine running VS Code; these launch options are shared across operating systems, not cross-compilers. On macOS the launch entries set `VK_ICD_FILENAMES` to the KosmicKrisp manifest in `build/complex-<variant>-macos`.
 
 If CMake Tools asks for a kit on Apple Silicon macOS, select `Homebrew LLVM arm64`. The workspace also uses `cmake/toolchains/macos-arm64-homebrew-llvm.cmake` so stale AppleClang kit selections are redirected to the Homebrew LLVM compiler required for `import std`.
 
@@ -254,6 +255,8 @@ cd vcpkg
 
 ## VS Code
 
+The ordinary build and launch tasks use Complex Engine. Use **Tasks: Run Task > Build simple (choose configuration)** to build the alternative without changing the default launch paths.
+
 The launch entries run these task labels internally: `Build Mac debug`, `Build Mac release`, `Build Windows debug`, `Build Windows release`, `Build Linux debug`, and `Build Linux release`. To run tests in VS Code, use the `world tests` or `all tests` launch entry and choose the desired platform and variant.
 
 ## Unit Tests
@@ -268,7 +271,7 @@ Linux Debug restores the sealed IQ-00 references from `tests/assets/image-qualit
 
 Shared test helpers use `import VVE.TestSupport` and the `vve_test_support` library, defined in `tests/CMakeLists.txt` from `tests/support/TestSupport.ixx`. The `vve::test` helpers configure hidden engines, write text fixtures in each test's build directory, and measure RGBA captures. Scene data, masks, tolerances and assertions remain in the tests. Sponza captures use `VVE_TEST_SPONZA_SCENE`, the configured source path, without runtime asset discovery.
 
-The build scripts run all tests after a successful build (`build_windows.cmd` skips them with `--no-tests`). To build and run all unit tests from the project root:
+The build scripts run CTest after a successful build, except for the `racer` group. Use `--no-tests` to skip running CTest. To build and test the default engine from the project root:
 
 ```powershell
 .\build_windows.cmd debug
@@ -277,13 +280,13 @@ The build scripts run all tests after a successful build (`build_windows.cmd` sk
 To rerun the tests of an existing build, or to list the registered tests without running them:
 
 ```powershell
-ctest --test-dir build/debug-windows --output-on-failure
-ctest --test-dir build/debug-windows -N
+ctest --test-dir build/complex-debug-windows --output-on-failure
+ctest --test-dir build/complex-debug-windows -N
 ```
 
-For other build directories (`build/debug-linux`, `build/macos-debug`, ...) replace the `--test-dir` argument; add `-R <name>` to run selected tests.
+For other build directories, use the path reported by the build script. Add `-R <name>` to run selected tests.
 
-Tests that need a window or Vulkan device carry the `gpu` label. Use `ctest --test-dir build/debug-linux -LE gpu -N` to list the CPU subset, and omit `-N` to run it without a display or Vulkan device. Register window/GPU tests with `vve_add_engine_test(<Name> GPU [extra libraries])`. All six example tests also carry the `example` label, selectable with `-L example`. The four Ring Racer game runs take minutes and carry the `racer` label; the build scripts skip them with `-LE racer`, and `ctest --test-dir <build> -L racer` runs them.
+Tests that need a window or Vulkan device carry the `gpu` label. Use `ctest --test-dir build/complex-debug-linux -LE gpu -N` to list the CPU subset, and omit `-N` to run it without a display or Vulkan device. Register window/GPU tests with `vve_add_engine_test(<Name> GPU [extra libraries])`. All six example tests also carry the `example` label, selectable with `-L example`. The four Ring Racer game runs take minutes and carry the `racer` label; the build scripts skip them with `-LE racer`, and `ctest --test-dir <build> -L racer` runs them.
 
 `VulkanDeviceRequirementsTests` checks the Vulkan 1.3 version and feature requirements using synthetic capabilities. It belongs to the CPU subset and creates no Vulkan instance, device or window.
 
@@ -293,7 +296,7 @@ The simple renderer bounds its in-flight fence wait to 1 second and image acquis
 
 Opt-in `setGpuTimingReadback(true)` diagnostics report fence-completed `gpu.tonemap_ms`, `gpu.smaa_ms`, `gpu.frame_ms` and actual device/presentation metadata; default frames allocate no queries.
 
-With `BUILD_TESTING` and the simple engine, `vve_add_example_test(<target>)` in `examples/CMakeLists.txt` registers `game`, `testscene`, `sponza` and `simple_forward_demo` with `--frames 3` (`game` uses 180 frames and verifies crate collection) and a 60-second forward timeout. Each has a deferred counterpart using the same executable and public runtime API. These tests run from the repository root. Run all example tests with `ctest --test-dir build/debug-linux -L example --output-on-failure`. The `simple_forward_demo` test passes `--output <build>/examples/simple_forward_demo/verify/simple_forward_demo_capture.png`; without `--output`, the example keeps its executable-relative capture path.
+With `BUILD_TESTING`, `vve_add_example_test(<target>)` in `examples/CMakeLists.txt` registers `game`, `testscene`, `sponza` and `simple_forward_demo` with `--frames 3` (`game` uses 180 frames and verifies crate collection) and a 60-second forward timeout. Each has a deferred counterpart using the same executable and public runtime API. These tests run from the repository root. Run all example tests with `ctest --test-dir build/complex-debug-linux -L example --output-on-failure`. The `simple_forward_demo` test passes `--output <build>/examples/simple_forward_demo/verify/simple_forward_demo_capture.png`; without `--output`, the example keeps its executable-relative capture path.
 
 Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (`postprocessing --frames 3 --all-effects`, which compiles and runs all 15 effects and fails on a non-zero exit code). Without `--all-effects`, `postprocessing` keeps its default chromatic, vignette, tonemap, greyscale and film grain chain. The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
 

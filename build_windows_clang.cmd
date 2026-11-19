@@ -17,6 +17,7 @@ for %%T in (clang++.exe clang-scan-deps.exe cmake.exe ninja.exe) do (
 rem Reuse the downloaded dependency if the MSVC build has already populated it.
 set "VVE_LOCAL_DEP="
 if exist "build\debug-windows\_deps\viennavulkanpostprocessinglibrary-src\CMakeLists.txt" set "VVE_LOCAL_DEP=-DFETCHCONTENT_SOURCE_DIR_VIENNAVULKANPOSTPROCESSINGLIBRARY=%CD%\build\debug-windows\_deps\viennavulkanpostprocessinglibrary-src"
+if exist "build\complex-debug-windows\_deps\viennavulkanpostprocessinglibrary-src\CMakeLists.txt" set "VVE_LOCAL_DEP=-DFETCHCONTENT_SOURCE_DIR_VIENNAVULKANPOSTPROCESSINGLIBRARY=%CD%\build\complex-debug-windows\_deps\viennavulkanpostprocessinglibrary-src"
 if defined VVE_LOCAL_DEP (
     cmake --preset debug-clang "%VVE_LOCAL_DEP%" %*
 ) else (
@@ -26,5 +27,5 @@ if errorlevel 1 exit /b 1
 cmake --build --preset build-debug-clang
 if errorlevel 1 exit /b 1
 rem The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
-ctest --test-dir build\debug-clang --output-on-failure -LE racer
+ctest --test-dir build\complex-debug-clang --output-on-failure -LE racer
 exit /b %errorlevel%

@@ -41,17 +41,8 @@
                 "Vcpkg Install Host"
             ],
             "args": [
-                "-S",
-                "${workspaceFolder}",
-                "-B",
-                "${workspaceFolder}/build/vscode-debug",
-                "-G",
-                "Ninja",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-                "-DVVE_DEFAULT_VULKAN_ICD=kosmickrisp",
-                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple",
-                "-DVVE_VCPKG_TRIPLET=arm64-osx",
+                "--preset",
+                "debug-macos",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
             "options": {
@@ -67,17 +58,8 @@
                 "Vcpkg Install Host"
             ],
             "args": [
-                "-S",
-                "${workspaceFolder}",
-                "-B",
-                "${workspaceFolder}/build/vscode-release",
-                "-G",
-                "Ninja",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-                "-DVVE_DEFAULT_VULKAN_ICD=kosmickrisp",
-                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple",
-                "-DVVE_VCPKG_TRIPLET=arm64-osx",
+                "--preset",
+                "release-macos",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
             "options": {
@@ -126,7 +108,8 @@
             ],
             "args": [
                 "--build",
-                "${workspaceFolder}/build/vscode-debug"
+                "--preset",
+                "build-debug-macos"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -146,7 +129,8 @@
             ],
             "args": [
                 "--build",
-                "${workspaceFolder}/build/vscode-release"
+                "--preset",
+                "build-release-macos"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -162,6 +146,7 @@
                 "/c",
                 "build_windows.cmd",
                 "debug",
+                "--complex",
                 "--no-tests"
             ],
             "options": {
@@ -178,6 +163,7 @@
                 "/c",
                 "build_windows.cmd",
                 "release",
+                "--complex",
                 "--no-tests"
             ],
             "options": {
@@ -218,6 +204,32 @@
                 "cwd": "${workspaceFolder}"
             },
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build simple (choose configuration)",
+            "type": "process",
+            "command": "bash",
+            "args": ["build_linux.sh", "${input:simpleBuildVariant}", "--simple", "--no-tests"],
+            "osx": {
+                "args": ["build_macos.sh", "${input:simpleBuildVariant}", "--simple", "--no-tests"]
+            },
+            "windows": {
+                "command": "${env:ComSpec}",
+                "args": ["/d", "/c", "build_windows.cmd", "${input:simpleBuildVariant}", "--simple", "--no-tests"]
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "simpleBuildVariant",
+            "type": "pickString",
+            "description": "Select a configuration for the simple engine",
+            "options": ["debug", "release"],
+            "default": "debug"
         }
     ]
 }

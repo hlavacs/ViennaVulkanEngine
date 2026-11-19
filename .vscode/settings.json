@@ -3,9 +3,9 @@
 	"cmake.useCMakePresets": "never",
 	"cmake.configureOnOpen": false,
 	"cmake.showSystemKits": true,
-	"cmake.buildDirectory": "${workspaceFolder}/build/vscode-${variant:buildType}",
+	"cmake.buildDirectory": "${workspaceFolder}/build/complex-vscode-${variant:buildType}",
 	"cmake.generator": "Ninja",
 	"cmake.configureSettings": {
-		"VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "simple"
+		"VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "complex"
 	}
 }

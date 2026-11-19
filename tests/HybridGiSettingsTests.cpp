@@ -10,23 +10,25 @@ import VVE.TestSupport;
 /// @brief Malformed requests must preserve every field; AO is stored without allocating or running an AO pass.
 int main() {
     using namespace vve;
-    Engine<> facade;
-    auto world = facade.world(); auto &publicRender = world.get<RenderSystem>();
-    const GiSettings selected{.enabled = false,.ao_enabled = true,.indirect_strength = .75F,.quality = GiQuality::low};
-    if (!publicRender.setGiSettings(selected)) return 1;
-    const auto unchanged = [&] {
-        const auto s = publicRender.giSettings();
-        return s.enabled == selected.enabled && s.ao_enabled == selected.ao_enabled &&
-            s.indirect_strength == selected.indirect_strength && s.quality == selected.quality;
-    };
-    for (const auto strength : {-1.0F,std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity()}) {
-        auto bad = selected; bad.enabled = true; bad.indirect_strength = strength;
+    {
+        Engine<> facade;
+        auto world = facade.world(); auto &publicRender = world.get<RenderSystem>();
+        const GiSettings selected{.enabled = false,.ao_enabled = true,.indirect_strength = .75F,.quality = GiQuality::low};
+        if (!publicRender.setGiSettings(selected)) return 1;
+        const auto unchanged = [&] {
+            const auto s = publicRender.giSettings();
+            return s.enabled == selected.enabled && s.ao_enabled == selected.ao_enabled &&
+                s.indirect_strength == selected.indirect_strength && s.quality == selected.quality;
+        };
+        for (const auto strength : {-1.0F,std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity()}) {
+            auto bad = selected; bad.enabled = true; bad.indirect_strength = strength;
+            const auto result = publicRender.setGiSettings(bad);
+            if (result || result.error() != Error::invalid_argument || !unchanged()) return 2;
+        }
+        auto bad = selected; bad.quality = static_cast<GiQuality>(99);
         const auto result = publicRender.setGiSettings(bad);
         if (result || result.error() != Error::invalid_argument || !unchanged()) return 2;
     }
-    auto bad = selected; bad.quality = static_cast<GiQuality>(99);
-    const auto result = publicRender.setGiSettings(bad);
-    if (result || result.error() != Error::invalid_argument || !unchanged()) return 2;
     auto engine = test::hiddenEngine("gi-settings",PixelExtent{64,64}); auto &render = engine.renderSystem();
     if (!render.giSettings().enabled || !engine.init() || !render.setRendererBackend(RendererBackend::hybrid_gi)) return 1;
     // Keep the fallback reference above both volumes (coarse top y=8), preserving the exact equality premise.

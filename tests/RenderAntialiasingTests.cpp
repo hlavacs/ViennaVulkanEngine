@@ -144,12 +144,14 @@ namespace {
 /// @brief Verifies the public forwarding contract and visible multisample coverage against the unchanged default.
 int main() {
 	using namespace vve;
-	Engine<> facade;
-	auto world = facade.world();
-	auto &render = world.get<RenderSystem>();
-	const auto invalid = render.setAntialiasing(static_cast<Antialiasing>(99));
-	if (render.antialiasing() != Antialiasing::none || invalid || invalid.error() != Error::invalid_argument ||
-		!render.setAntialiasing(Antialiasing::msaa4) || render.antialiasing() != Antialiasing::msaa4) { return 1; }
+	{
+		Engine<> facade;
+		auto world = facade.world();
+		auto &render = world.get<RenderSystem>();
+		const auto invalid = render.setAntialiasing(static_cast<Antialiasing>(99));
+		if (render.antialiasing() != Antialiasing::none || invalid || invalid.error() != Error::invalid_argument ||
+			!render.setAntialiasing(Antialiasing::msaa4) || render.antialiasing() != Antialiasing::msaa4) { return 1; }
+	}
 	bool supported{};
 	const auto single = checkMode(Antialiasing::none, supported);
 	const auto multi = checkMode(Antialiasing::msaa4, supported);

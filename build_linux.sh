@@ -6,12 +6,12 @@ cd "$(dirname "$0")"
 CMAKE_BIN="${CMAKE:-$(command -v cmake || true)}"
 JOBS="${CMAKE_BUILD_PARALLEL_LEVEL:-$(nproc 2>/dev/null || printf '8')}"
 VARIANT="Release"
+ENGINE="complex"
 CLEAN=0
 RUN_TESTS=1
 
 usage() {
-  printf 'Usage: %s [debug|release] [--clean] [--no-tests]   (default: release)\n' "$0"
-  printf '       %s --clean [debug|release] [--no-tests]\n' "$0"
+  printf 'Usage: %s [debug|release] [--complex|--simple] [--clean] [--no-tests]   (default: complex release)\n' "$0"
 }
 
 for arg in "$@"; do
@@ -21,6 +21,9 @@ for arg in "$@"; do
       ;;
     release|Release|RELEASE)
       VARIANT="Release"
+      ;;
+    --complex|--simple)
+      ENGINE="${arg#--}"
       ;;
     --clean)
       CLEAN=1
@@ -41,6 +44,11 @@ done
 
 VARIANT_LOWER="$(printf '%s' "$VARIANT" | tr '[:upper:]' '[:lower:]')"
 BUILD_DIR="build/${VARIANT_LOWER}-linux"
+OUTPUT_DIR="bin/${VARIANT_LOWER}"
+if [ "$ENGINE" = complex ]; then
+  BUILD_DIR="build/complex-${VARIANT_LOWER}-linux"
+  OUTPUT_DIR="bin/complex/${VARIANT_LOWER}"
+fi
 VCPKG_TRIPLET="x64-linux-llvm"
 VULKAN_CMAKE_ARGS=()
 COMPILER_CMAKE_ARGS=()
@@ -131,7 +139,7 @@ fi
 "$CMAKE_BIN" -S . -B "$BUILD_DIR" -G Ninja \
   -DCMAKE_BUILD_TYPE="$VARIANT" \
   -DVVE_DEFAULT_VULKAN_ICD=system \
-  -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple \
+  -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE="$ENGINE" \
   -DVVE_VCPKG_TRIPLET="$VCPKG_TRIPLET" \
   "${COMPILER_CMAKE_ARGS[@]}" \
   "${VULKAN_CMAKE_ARGS[@]}"
@@ -147,5 +155,5 @@ if [ "$RUN_TESTS" -eq 1 ]; then
   "$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure -LE racer
 fi
 
-printf '\n%s build complete. Executables: bin/%s/exe\n' "$VARIANT" "$VARIANT_LOWER"
-printf 'Verification output: bin/%s/verify\n' "$VARIANT_LOWER"
+printf '\n%s %s build complete. Executables: %s/exe\n' "$ENGINE" "$VARIANT" "$OUTPUT_DIR"
+printf 'Verification output: %s/verify\n' "$OUTPUT_DIR"

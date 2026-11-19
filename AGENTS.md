@@ -25,7 +25,7 @@ User programs should only call into the facade layer. User programs are not allo
 
 The engine implementations are situated in the src/versions folder and are completely isolated from each other. This is the implementation layer. The meta engine is compiled with exactly one engine implementation. Each game engine is isolated with its own namespace. For instance, the simple engine lives in the namespace vve::simple, source files are located in folder src/versions/simple.
 
-When compiling their game, game apps are compiled and linked against the meta engine. Which engine implementation is used is selected at configure time by the CMake variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE. It names one file src/implementations/<name>.ixx (the module partition VVEngine:Implementation) and one directory src/versions/<name>/. The partition is the only facade file that imports the implementation module; it exports type aliases vve::detail::EngineImpl, AssetSystemImpl, RenderSystemImpl, WindowSystemImpl, WindowImpl, InputStateImpl, GuiSystemImpl, WindowsImpl plus vve::engineImplementationNamespaceName. No other facade file may name a concrete implementation namespace. The available implementations are simple (the default) and complex.
+When compiling their game, game apps are compiled and linked against the meta engine. Which engine implementation is used is selected at configure time by the CMake variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE. It names one file src/implementations/<name>.ixx (the module partition VVEngine:Implementation) and one directory src/versions/<name>/. The partition is the only facade file that imports the implementation module; it exports type aliases vve::detail::EngineImpl, AssetSystemImpl, RenderSystemImpl, WindowSystemImpl, WindowImpl, InputStateImpl, GuiSystemImpl, WindowsImpl plus vve::engineImplementationNamespaceName. No other facade file may name a concrete implementation namespace. The available implementations are complex (the default) and simple.
 
 Facades are defined in a facade pattern through wrapper classes and functions. Every class that is seen by the user lives in the facade layer as a wrapper. Wrappers have exactly one private member variable impl_ which is of type 
 ```cpp
@@ -167,8 +167,8 @@ For example when testing rendering with various lighst, the test program could b
 
 - Opt-in `setGpuTimingReadback` adds Neutral/SMAA/full-frame timestamps and device/surface receipts through `renderDiagnostics`; default frames allocate no queries or record timestamp commands.
 
-- `./build_linux.sh [debug|release] [--clean]`, `./build_macos.sh [debug|release] [--clean]` and `.\build_windows.cmd [debug|release] [--clean] [--no-tests] [--docs]` configure, build and run CTest (default variant: release). Build directories: `build/<variant>-linux`, `build/macos-<variant>`, `build\<variant>-windows`; the CMake presets use `build/<preset name>`. All builds use Ninja, because CMake supports `import std` only with Ninja generators; the Windows presets need a Developer PowerShell for Visual Studio. See README.md for prerequisites.
-- Executables are written to `bin/<variant>/exe`. The light_shadow_debug example writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`.
+- The Windows, Linux, and macOS build scripts configure, build and run CTest. They default to complex Release, and `--simple` selects the other implementation without changing the test list. Default build directories use `build/complex-<variant>-<platform>`.
+- Executables are written to `bin/complex/<variant>/exe` for complex and `bin/<variant>/exe` for simple.
 - Tests are C++ executables in the tests folder, one file each, that return 0 on success. Each must be registered in tests/CMakeLists.txt with `vve_add_engine_test(<Name> [extra libraries])`; an unregistered file is never built or run. CTest also runs the examples as `LightShadowDebugExample` and `PostProcessingSmokeTests`.
 - Rerun tests with `ctest --test-dir <build directory> --output-on-failure [-R <name>]`.
 - Shared test helpers live in `tests/support/TestSupport.ixx` (module `VVE.TestSupport`, namespace `vve::test`); importing tests link `vve_test_support`. It provides hidden simple-engine setup, text fixtures and RGBA capture measurements. Keep test-specific fixtures and assertions in the individual tests.
@@ -180,7 +180,7 @@ Ignore the AGENTS.md files of other engines, only read and analyse the AGENTS.md
 Engines must be completely isolated from each other. One engine must never refer to another engine, or use something from another engine.
 If instructions say: use this from another engine, then do not make an alias etc ro anything of this engien. Instead create new functionality for the concrete engine but make it similar to the functionality of the referred engine.
 
-At configure time, the CMake cache variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE (simple by default; complex is also supported) selects one of the engines available.
+At configure time, the CMake cache variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE (complex by default; simple is also supported) selects one of the engines available.
 
 ## src/versions/simple
 

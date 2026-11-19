@@ -13,7 +13,7 @@ add_dependencies(light_shadow_debug
 
 vve_set_output_dirs(light_shadow_debug)
 
-if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
+if(BUILD_TESTING)
     add_test(NAME LightShadowDebugExample
         COMMAND light_shadow_debug --frames 1 --output "$<TARGET_FILE_DIR:light_shadow_debug>/../verify/light_shadow_debug.txt")
     set_tests_properties(LightShadowDebugExample PROPERTIES LABELS "gpu;example")

@@ -23,7 +23,7 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.platform }} / ${{ matrix.configuration }}
+    name: ${{ matrix.platform }} / ${{ matrix.configuration }} / ${{ matrix.engine }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     strategy:
@@ -31,6 +31,7 @@ jobs:
       matrix:
         platform: [Windows, Linux, macOS]
         configuration: [debug, release]
+        engine: [complex, simple]
         include:
           - platform: Windows
             runner: windows-2025-vs2026
@@ -188,23 +189,23 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          & .\build_windows.cmd '${{ matrix.configuration }}' --no-tests 2>&1 |
+          & .\build_windows.cmd '${{ matrix.configuration }}' '--${{ matrix.engine }}' --no-tests 2>&1 |
             Tee-Object -FilePath build.log
           exit $LASTEXITCODE
 
       - name: Compile Linux engine, examples and tests
         if: runner.os == 'Linux'
-        run: bash build_linux.sh '${{ matrix.configuration }}' --no-tests 2>&1 | tee build.log
+        run: bash build_linux.sh '${{ matrix.configuration }}' '--${{ matrix.engine }}' --no-tests 2>&1 | tee build.log
 
       - name: Compile macOS engine, examples and tests
         if: runner.os == 'macOS'
-        run: bash build_macos.sh '${{ matrix.configuration }}' --no-tests 2>&1 | tee build.log
+        run: bash build_macos.sh '${{ matrix.configuration }}' '--${{ matrix.engine }}' --no-tests 2>&1 | tee build.log
 
       - name: Upload failure logs
         if: failure()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: build-logs-${{ matrix.platform }}-${{ matrix.configuration }}
+          name: build-logs-${{ matrix.platform }}-${{ matrix.configuration }}-${{ matrix.engine }}
           retention-days: 14
           include-hidden-files: true
           if-no-files-found: ignore

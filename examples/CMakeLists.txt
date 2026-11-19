@@ -31,7 +31,7 @@ add_subdirectory(audio)
 
 # Register short facade-example runs with the same asset root as an interactive launch.
 function(vve_add_example_test target)
-    if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
+    if(BUILD_TESTING)
         if(TARGET ${target})
             set(capture_args --output "${CMAKE_CURRENT_BINARY_DIR}/${target}/verify/${target}.png")
             if(target STREQUAL "simple_forward_demo")
@@ -83,7 +83,7 @@ endif()
 # The car example checks every frame that its parts follow their parent nodes and fails on a mismatch.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/hierarchy_car/CMakeLists.txt")
     add_subdirectory(hierarchy_car)
-    if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
+    if(BUILD_TESTING)
         vve_add_renderer_example_test(HierarchyCarExample hierarchy_car --frames 120
             --output "${CMAKE_CURRENT_BINARY_DIR}/hierarchy_car/verify/hierarchy_car.png"
             --verify "${CMAKE_CURRENT_BINARY_DIR}/hierarchy_car/verify/hierarchy_car.txt")

@@ -21,7 +21,7 @@ if (Test-Path $programFilesCtest) {
 switch ($Platform) {
     "Windows" {
         $configuration = if ($Variant -eq "debug") { "Debug" } else { "Release" }
-        $buildName = if ($Variant -eq "debug") { "debug-windows" } else { "release-windows" }
+        $buildName = "complex-$Variant-windows"
         $buildDir = Join-Path $repoRoot "build\$buildName"
         $ctestArgs = @(
             "--test-dir", $buildDir,
@@ -30,7 +30,7 @@ switch ($Platform) {
         )
     }
     "Mac" {
-        $buildDir = Join-Path $repoRoot "build\vscode-$Variant"
+        $buildDir = Join-Path $repoRoot "build\complex-$Variant-macos"
         $manifest = Join-Path $buildDir "vulkan\icd.d\libkosmickrisp_icd.json"
         if (Test-Path $manifest) {
             $env:VK_ICD_FILENAMES = $manifest
@@ -41,7 +41,7 @@ switch ($Platform) {
         )
     }
     "Linux" {
-        $buildName = if ($Variant -eq "debug") { "debug-linux" } else { "release-linux" }
+        $buildName = "complex-$Variant-linux"
         $buildDir = Join-Path $repoRoot "build\$buildName"
         $ctestArgs = @(
             "--test-dir", $buildDir,

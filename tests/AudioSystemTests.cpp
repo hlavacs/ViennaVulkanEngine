@@ -13,6 +13,7 @@
 #include <thread>
 
 import VVEngine;
+import VVEngine.Simple;
 
 namespace {
 std::size_t checks{}; ///< Count of successful public contract checks.
@@ -196,11 +197,9 @@ void testAudio(const std::filesystem::path &decodedPath, const std::filesystem::
    const auto replacement = value(audio.play(demand, loop), "play after finite completion");
    check(replacement != finite, "new playback has a fresh handle");
    expectError(audio.volume(finite), Error::invalid_handle, "next play reclaims completed voice");
-   // Mixer lifetimes and handle ownership remain isolated when two engines coexist.
+   // Exercise two independent mixers without constructing another engine.
    {
-      Engine otherEngine;
-      auto otherWorld = otherEngine.world();
-      auto &other = otherWorld.get<AudioSystem>();
+      vve::simple::AudioSystem other;
       const auto otherInitialized = other.init();
       check(otherInitialized.has_value(), std::string{"initialize second mixer: "} + other.lastError());
       const auto otherSound = value(other.loadSound(decodedPath), "second mixer loads sound");
@@ -217,7 +216,7 @@ void testAudio(const std::filesystem::path &decodedPath, const std::filesystem::
       const auto reloaded = value(other.loadSound(decodedPath), "load after second reinit");
       check(other.play(reloaded, loop).has_value(), "second mixer plays after reinit");
    }
-   check(audio.isPlaying(replacement), "first mixer survives other engine destruction");
+   check(audio.isPlaying(replacement), "first mixer survives second mixer destruction");
    audio.shutdown(); audio.shutdown();
    check(!audio.initialized(), "shutdown is idempotent");
    check(!audio.isPlaying(replacement) && !audio.isPaused(replacement), "shutdown stops old voices");

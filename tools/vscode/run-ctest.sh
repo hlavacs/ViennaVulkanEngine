@@ -2,24 +2,18 @@
 set -eu
 
 platform="${1:-Mac}"
-variant="${2:-Debug}"
+variant="${2:-debug}"
 filter="${3:-}"
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 repo_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
 
 case "$platform:$variant" in
-    Mac:debug)
-        build_dir="$repo_root/build/vscode-debug"
+    Mac:debug|Mac:release)
+        build_dir="$repo_root/build/complex-$variant-macos"
         ;;
-    Mac:release)
-        build_dir="$repo_root/build/vscode-release"
-        ;;
-    Linux:debug)
-        build_dir="$repo_root/build/debug-linux"
-        ;;
-    Linux:release)
-        build_dir="$repo_root/build/release-linux"
+    Linux:debug|Linux:release)
+        build_dir="$repo_root/build/complex-$variant-linux"
         ;;
     Windows:*)
         echo "The Windows test launcher must be run on Windows." >&2

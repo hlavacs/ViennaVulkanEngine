@@ -5,7 +5,7 @@
             "name": "Windows Debug (choose executable)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/debug/exe/${input:windowsExecutable}.exe",
+            "program": "${workspaceFolder}/bin/complex/debug/exe/${input:windowsExecutable}.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -17,7 +17,7 @@
             "name": "game",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:variant}/exe/game",
+            "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/game",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -30,13 +30,13 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
+                        "value": "${workspaceFolder}/build/complex-${input:variant}-macos/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\game.exe",
+                "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/game.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -45,7 +45,7 @@
             "name": "testscene",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:variant}/exe/testscene",
+            "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/testscene",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -58,13 +58,13 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
+                        "value": "${workspaceFolder}/build/complex-${input:variant}-macos/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\testscene.exe",
+                "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/testscene.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -73,7 +73,7 @@
             "name": "postprocessing",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:variant}/exe/postprocessing",
+            "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/postprocessing",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -86,13 +86,13 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
+                        "value": "${workspaceFolder}/build/complex-${input:variant}-macos/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\postprocessing.exe",
+                "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/postprocessing.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -101,7 +101,7 @@
             "name": "sponza",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:variant}/exe/sponza",
+            "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/sponza",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -115,13 +115,13 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
+                        "value": "${workspaceFolder}/build/complex-${input:variant}-macos/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\sponza.exe",
+                "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/sponza.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -130,7 +130,7 @@
             "name": "world tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:variant}/exe/WorldTests",
+            "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/WorldTests",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -143,13 +143,13 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
+                        "value": "${workspaceFolder}/build/complex-${input:variant}-macos/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\WorldTests.exe",
+                "program": "${workspaceFolder}/bin/complex/${input:variant}/exe/WorldTests.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -204,6 +204,7 @@
                 "postprocessing",
                 "simple_forward_demo",
                 "light_shadow_debug",
+                "island_delivery",
                 "WorldTests"
             ],
             "default": "game"

@@ -78,15 +78,17 @@ namespace {
 /// @brief Exit code 0 when validation and both backends pass.
 int main() {
 	using namespace vve;
-	auto engine = test::hiddenEngine("render-sky-validation", PixelExtent{32, 32});
-	auto &render = engine.renderSystem();
-	const std::array invalid{SkySettings{.intensity = -1}, SkySettings{.haze = std::numeric_limits<float>::quiet_NaN()},
-		SkySettings{.cloud_coverage = 1.5F}, SkySettings{.cloud_thickness = 0}, SkySettings{.wind = Vec2{std::numeric_limits<float>::infinity(), 0}}};
-	const bool rejected = std::ranges::none_of(invalid, [&](const SkySettings &sky) { return render.setSky(sky).has_value(); });
-	render.clearScene(); // The sky is renderer state, not a scene object.
-	if (!rejected || render.sky().enabled || !render.setSky({.enabled = true}) || (render.clearScene(), !render.sky().enabled)) {
-		std::println("[RenderSkyTests] result=FAIL validation");
-		return 1;
+	{
+		auto engine = test::hiddenEngine("render-sky-validation", PixelExtent{32, 32});
+		auto &render = engine.renderSystem();
+		const std::array invalid{SkySettings{.intensity = -1}, SkySettings{.haze = std::numeric_limits<float>::quiet_NaN()},
+			SkySettings{.cloud_coverage = 1.5F}, SkySettings{.cloud_thickness = 0}, SkySettings{.wind = Vec2{std::numeric_limits<float>::infinity(), 0}}};
+		const bool rejected = std::ranges::none_of(invalid, [&](const SkySettings &sky) { return render.setSky(sky).has_value(); });
+		render.clearScene(); // The sky is renderer state, not a scene object.
+		if (!rejected || render.sky().enabled || !render.setSky({.enabled = true}) || (render.clearScene(), !render.sky().enabled)) {
+			std::println("[RenderSkyTests] result=FAIL validation");
+			return 1;
+		}
 	}
 	const auto forward = captures(RendererBackend::forward), deferred = captures(RendererBackend::deferred);
 	if (!forward || !deferred) { std::println("[RenderSkyTests] result=FAIL capture"); return 1; }

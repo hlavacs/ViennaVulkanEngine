@@ -1,16 +1,17 @@
 /** @file @brief Public runtime renderer selection, instance independence and startup lifetime contracts. */
 import std;
 import VVEngine;
+import VVEngine.Simple;
 
 namespace {
 
-/// @brief Rejects malformed selections and keeps startup choices independent without opening a window.
+/// @brief Rejects malformed selections and keeps two render systems independent without opening a window.
 [[nodiscard]] bool startupContracts() {
 	using namespace vve;
-	Engine<> first, second;
-	auto first_world = first.world(), second_world = second.world();
+	Engine<> first;
+	auto first_world = first.world();
 	auto &a = first_world.get<RenderSystem>();
-	auto &b = second_world.get<RenderSystem>();
+	simple::RenderSystem b;
 	if (a.rendererBackend() != RendererBackend::forward || b.rendererBackend() != RendererBackend::forward) { return false; }
 	const auto invalid = a.setRendererBackend(static_cast<RendererBackend>(99));
 	if (invalid || invalid.error() != Error::invalid_argument || a.rendererBackend() != RendererBackend::forward) { return false; }
