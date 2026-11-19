@@ -3,7 +3,7 @@
 API reviewed for V3 `24760ae1` on 29 October 2026. Both PDF guides now cover optional positional
 audio; the verification section records existing test coverage rather than a fresh execution.
 On Windows, `build_windows.cmd debug --no-tests` compiles audio and test executables without running
-them. To run the audio group separately: `ctest --test-dir build/debug-windows -L audio --output-on-failure`.
+them. To run the audio group separately: `ctest --test-dir build/complex-debug-windows -L audio --output-on-failure`.
 
 VVE's `AudioSystem` facade uses SDL3_mixer. Import `VVEngine` and obtain audio from
 `engine.world()`, just like the renderer or asset system. Games do not include SDL
@@ -23,7 +23,7 @@ build_windows.cmd release
 ./build_macos.sh release
 ```
 
-Run `bin/debug/exe/audio_demo.exe` or `bin/release/exe/audio_demo.exe` on Windows;
+Run `bin/complex/debug/exe/audio_demo.exe` or `bin/complex/release/exe/audio_demo.exe` on Windows;
 on Linux/macOS the executable is named `audio_demo`. It plays a bundled original
 sound, demonstrates overlapping playback, pause/resume and volume, then exits.
 An optional command-line audio filename replaces the bundled sound. CMake copies

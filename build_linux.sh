@@ -11,7 +11,7 @@ CLEAN=0
 RUN_TESTS=1
 
 usage() {
-  printf 'Usage: %s [debug|release] [--complex|--simple] [--clean] [--no-tests]   (default: complex release)\n' "$0"
+  printf 'Usage: %s [debug|release] [--complex|--simple|--all] [--clean] [--no-tests]   (default: complex release)\n' "$0"
 }
 
 for arg in "$@"; do
@@ -22,7 +22,7 @@ for arg in "$@"; do
     release|Release|RELEASE)
       VARIANT="Release"
       ;;
-    --complex|--simple)
+    --complex|--simple|--all)
       ENGINE="${arg#--}"
       ;;
     --clean)
@@ -43,13 +43,7 @@ for arg in "$@"; do
 done
 
 VARIANT_LOWER="$(printf '%s' "$VARIANT" | tr '[:upper:]' '[:lower:]')"
-BUILD_DIR="build/${VARIANT_LOWER}-linux"
-OUTPUT_DIR="bin/${VARIANT_LOWER}"
-if [ "$ENGINE" = complex ]; then
-  BUILD_DIR="build/complex-${VARIANT_LOWER}-linux"
-  OUTPUT_DIR="bin/complex/${VARIANT_LOWER}"
-fi
-VCPKG_TRIPLET="x64-linux-llvm"
+CPKG_TRIPLET="x64-linux-llvm"
 VULKAN_CMAKE_ARGS=()
 COMPILER_CMAKE_ARGS=()
 
@@ -124,36 +118,49 @@ else
   printf 'vcpkg not found in VCPKG_ROOT or PATH; skipping dependency install.\n'
 fi
 
-# Only a compiler change invalidates the build tree automatically.
-CACHED_CXX_COMPILER=""
-if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
-  CACHED_CXX_COMPILER="$(sed -n 's/^CMAKE_CXX_COMPILER:[^=]*=//p' "$BUILD_DIR/CMakeCache.txt")"
+engines=("$ENGINE")
+if [ "$ENGINE" = all ]; then
+  engines=(complex simple)
 fi
-if [ "$CLEAN" -eq 1 ]; then
-  rm -rf "$BUILD_DIR"
-elif [ -n "$CACHED_CXX_COMPILER" ] && [ "$CACHED_CXX_COMPILER" != "$CXX_COMPILER" ]; then
-  printf 'Existing build cache uses %s instead of %s; recreating %s.\n' "$CACHED_CXX_COMPILER" "$CXX_COMPILER" "$BUILD_DIR"
-  rm -rf "$BUILD_DIR"
-fi
-
-"$CMAKE_BIN" -S . -B "$BUILD_DIR" -G Ninja \
-  -DCMAKE_BUILD_TYPE="$VARIANT" \
-  -DVVE_DEFAULT_VULKAN_ICD=system \
-  -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE="$ENGINE" \
-  -DVVE_VCPKG_TRIPLET="$VCPKG_TRIPLET" \
-  "${COMPILER_CMAKE_ARGS[@]}" \
-  "${VULKAN_CMAKE_ARGS[@]}"
-
-"$CMAKE_BIN" --build "$BUILD_DIR" --parallel "$JOBS"
-if [ "$RUN_TESTS" -eq 1 ]; then
-  # Tests that create windows open hidden SDL windows. Use the desktop's video driver when there is a display. On a machine
-  # without one, fall back to SDL's offscreen driver, which needs a Vulkan driver with VK_EXT_headless_surface.
-  if [ -z "${SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
-    export SDL_VIDEODRIVER=offscreen
+for ENGINE in "${engines[@]}"; do
+  BUILD_DIR="build/${VARIANT_LOWER}-linux"
+  OUTPUT_DIR="bin/${ENGINE}/${VARIANT_LOWER}"
+  if [ "$ENGINE" = complex ]; then
+    BUILD_DIR="build/complex-${VARIANT_LOWER}-linux"
   fi
-  # The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
-  "$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure -LE racer
-fi
 
-printf '\n%s %s build complete. Executables: %s/exe\n' "$ENGINE" "$VARIANT" "$OUTPUT_DIR"
-printf 'Verification output: %s/verify\n' "$OUTPUT_DIR"
+  printf 'Building %s %s...\n' "$ENGINE" "$VARIANT"
+  # Only a compiler change invalidates the build tree automatically.
+  CACHED_CXX_COMPILER=""
+  if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+    CACHED_CXX_COMPILER="$(sed -n 's/^CMAKE_CXX_COMPILER:[^=]*=//p' "$BUILD_DIR/CMakeCache.txt")"
+  fi
+  if [ "$CLEAN" -eq 1 ]; then
+    rm -rf "$BUILD_DIR"
+  elif [ -n "$CACHED_CXX_COMPILER" ] && [ "$CACHED_CXX_COMPILER" != "$CXX_COMPILER" ]; then
+    printf 'Existing build cache uses %s instead of %s; recreating %s.\n' "$CACHED_CXX_COMPILER" "$CXX_COMPILER" "$BUILD_DIR"
+    rm -rf "$BUILD_DIR"
+  fi
+
+  "$CMAKE_BIN" -S . -B "$BUILD_DIR" -G Ninja \
+    -DCMAKE_BUILD_TYPE="$VARIANT" \
+    -DVVE_DEFAULT_VULKAN_ICD=system \
+    -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE="$ENGINE" \
+    -DVVE_VCPKG_TRIPLET="$VCPKG_TRIPLET" \
+    "${COMPILER_CMAKE_ARGS[@]}" \
+    "${VULKAN_CMAKE_ARGS[@]}"
+
+  "$CMAKE_BIN" --build "$BUILD_DIR" --parallel "$JOBS"
+  if [ "$RUN_TESTS" -eq 1 ]; then
+    # Tests that create windows open hidden SDL windows. Use the desktop's video driver when there is a display. On a machine
+    # without one, fall back to SDL's offscreen driver, which needs a Vulkan driver with VK_EXT_headless_surface.
+    if [ -z "${SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+      export SDL_VIDEODRIVER=offscreen
+    fi
+    # The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
+    "$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure -LE racer
+  fi
+
+  printf '\n%s %s build complete. Executables: %s/exe\n' "$ENGINE" "$VARIANT" "$OUTPUT_DIR"
+  printf 'Verification output: %s/verify\n' "$OUTPUT_DIR"
+done

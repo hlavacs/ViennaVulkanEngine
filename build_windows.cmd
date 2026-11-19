@@ -5,7 +5,7 @@ rem Builds the Vienna Vulkan Engine on Windows using the Ninja generator, which
 rem is required for C++23 `import std` (the Visual Studio generator does not
 rem support it). Mirrors build_linux.sh.
 rem
-rem Usage: build_windows.cmd [debug|release] [--complex|--simple] [--clean] [--no-tests] [--docs]
+rem Usage: build_windows.cmd [debug|release] [--complex|--simple|--all] [--clean] [--no-tests] [--docs]
 rem Requires: Vulkan SDK (VULKAN_SDK set), CMake, Visual Studio 2022+ with the
 rem           C++ workload (provides cl, CMake, CTest, and Ninja), and vcpkg.
 rem From PowerShell: .\build_windows.cmd debug
@@ -21,18 +21,12 @@ set "STAGE=Prerequisite checks"
 
 :parse
 if "%~1"=="" goto done_parse
-if /I "%~1"=="debug" (set "VARIANT=debug") else if /I "%~1"=="release" (set "VARIANT=release") else if /I "%~1"=="--simple" (set "ENGINE=simple") else if /I "%~1"=="--complex" (set "ENGINE=complex") else if /I "%~1"=="--clean" (set "CLEAN=1") else if /I "%~1"=="--no-tests" (set "RUN_TESTS=0") else if /I "%~1"=="--docs" (set "BUILD_DOCS=1") else if /I "%~1"=="-h" (goto usage) else if /I "%~1"=="--help" (goto usage) else (echo Unknown argument: %~1 & goto usage)
+if /I "%~1"=="debug" (set "VARIANT=debug") else if /I "%~1"=="release" (set "VARIANT=release") else if /I "%~1"=="--all" (set "ENGINE=all") else if /I "%~1"=="--simple" (set "ENGINE=simple") else if /I "%~1"=="--complex" (set "ENGINE=complex") else if /I "%~1"=="--clean" (set "CLEAN=1") else if /I "%~1"=="--no-tests" (set "RUN_TESTS=0") else if /I "%~1"=="--docs" (set "BUILD_DOCS=1") else if /I "%~1"=="-h" (goto usage) else if /I "%~1"=="--help" (goto usage) else (echo Unknown argument: %~1 & goto usage)
 shift
 goto parse
 :done_parse
 
 if /I "%VARIANT%"=="debug" (set "CONFIG=Debug") else (set "CONFIG=Release")
-set "BUILD_DIR=build\%VARIANT%-windows"
-set "OUTPUT_DIR=bin\%VARIANT%"
-if "%ENGINE%"=="complex" (
-    set "BUILD_DIR=build\complex-%VARIANT%-windows"
-    set "OUTPUT_DIR=bin\complex\%VARIANT%"
-)
 
 if not defined VULKAN_SDK if defined VK_SDK_PATH set "VULKAN_SDK=%VK_SDK_PATH%"
 if not defined VULKAN_SDK (echo VULKAN_SDK is not set. Install the Vulkan SDK first. & goto fail)
@@ -95,6 +89,24 @@ echo Synchronizing vcpkg manifest dependencies using "%VCPKG_EXE%"...
 "%VCPKG_EXE%" install --triplet x64-windows --vcpkg-root "%VCPKG_ROOT%"
 if errorlevel 1 goto fail
 
+set "ENGINES=%ENGINE%"
+if "%ENGINE%"=="all" set "ENGINES=complex simple"
+for %%E in (%ENGINES%) do (
+    call :build_engine %%E
+    if errorlevel 1 goto fail
+)
+popd
+exit /b 0
+
+:build_engine
+set "ENGINE=%~1"
+echo Building %ENGINE% %CONFIG%...
+set "BUILD_DIR=build\%VARIANT%-windows"
+set "OUTPUT_DIR=bin\%ENGINE%\%VARIANT%"
+if "%ENGINE%"=="complex" (
+    set "BUILD_DIR=build\complex-%VARIANT%-windows"
+)
+
 if "%CLEAN%"=="1" (
     if exist "%BUILD_DIR%" (echo Removing %BUILD_DIR% ... & rmdir /s /q "%BUILD_DIR%")
 )
@@ -117,32 +129,31 @@ cmake %FRESH% -S . -B "%BUILD_DIR%" -G Ninja ^
     -DVVE_DEFAULT_VULKAN_ICD=system ^
     -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=%ENGINE% ^
     -DVVE_VCPKG_TRIPLET=x64-windows
-if errorlevel 1 goto fail
+if errorlevel 1 exit /b 1
 
 set "STAGE=Compilation and linking"
 cmake --build "%BUILD_DIR%"
-if errorlevel 1 goto fail
+if errorlevel 1 exit /b 1
 
 if "%BUILD_DOCS%"=="1" (
     set "STAGE=Doxygen documentation"
     cmake --build "%BUILD_DIR%" --target docs
-    if errorlevel 1 goto fail
+    if errorlevel 1 exit /b 1
 )
 
 if "%RUN_TESTS%"=="1" (
     set "STAGE=Tests after successful compilation and linking"
     rem The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
     ctest --test-dir "%BUILD_DIR%" --output-on-failure -LE racer
-    if errorlevel 1 goto fail
+    if errorlevel 1 exit /b 1
 )
 
 echo.
 echo %ENGINE% %CONFIG% build complete. Executables: %OUTPUT_DIR%\exe
-popd
 exit /b 0
 
 :usage
-echo Usage: .\%~nx0 [debug^|release] [--complex^|--simple] [--clean] [--no-tests] [--docs]   [default: complex release]
+echo Usage: .\%~nx0 [debug^|release] [--complex^|--simple^|--all] [--clean] [--no-tests] [--docs]   [default: complex release]
 popd
 exit /b 1
 

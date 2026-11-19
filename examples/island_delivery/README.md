@@ -41,11 +41,11 @@ Use the repository's normal build script, or an already configured build:
 ./build_linux.sh release
 # Incremental build after the normal VVE configuration:
 cmake --build build/release-linux --target island_delivery
-bin/release/exe/island_delivery
+bin/complex/release/exe/island_delivery
 ```
 
 On Windows use `build_windows.cmd release`, then
-`bin\release\exe\island_delivery.exe`. The existing macOS script and presets
+`bin\complex\release\exe\island_delivery.exe`. The existing macOS script and presets
 also include the example. The game locates assets beside its executable, so it
 can be launched from another working directory.
 
@@ -55,7 +55,7 @@ Enabling examples downloads the aircraft, Kenney service vehicles, original Poly
 eight recorded sounds during CMake configuration. Every downloaded file has a pinned
 SHA256; the model and its license also have a pinned upstream commit.
 External assets stay in `<build>/_assets/island_delivery`, and the game build
-copies them to `bin/<variant>/exe/assets/island_delivery`. **No external asset
+copies them to `bin/<engine>/<variant>/exe/assets/island_delivery`. **No external asset
 binaries are added to this repository.** Four existing Kenney Mini Characters
 and their palette are copied from `assets/racer/crowd` into the same cache;
 their rigid limbs animate through the public scene-node API. The manifest is
@@ -129,14 +129,14 @@ Bounded runs emit a PNG and CSV flight telemetry, then return nonzero for a
 crash, incomplete run, failed capture or required delivery that did not finish:
 
 ```sh
-bin/release/exe/island_delivery --autopilot --frames 60 \
+bin/complex/release/exe/island_delivery --autopilot --frames 60 \
   --steps-per-frame 240 --require-delivery \
   --output build/delivery.png --verify build/delivery.csv
 # Two completed jobs, with new cargo collected without resetting the aircraft:
-bin/release/exe/island_delivery --autopilot --deliveries 2 --require-delivery \
+bin/complex/release/exe/island_delivery --autopilot --deliveries 2 --require-delivery \
   --frames 60 --steps-per-frame 1200 --output build/two_jobs.png --verify build/two_jobs.csv
 # The same gameplay at the opposite end of the archipelago:
-bin/release/exe/island_delivery --start-island 254 --autopilot \
+bin/complex/release/exe/island_delivery --start-island 254 --autopilot \
   --frames 60 --steps-per-frame 1200 --require-delivery
 ctest --test-dir build/release-linux --output-on-failure -R IslandDelivery
 ```

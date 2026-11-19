@@ -146,6 +146,8 @@ VVE_ENGINE_IMPLEMENTATION_NAMESPACE
 
 CMake compiles `src/implementations/<name>.ixx`, the only facade file that names the implementation, together with `src/versions/<name>/`. User code still uses namespace `vve`; implementation code lives in `vve::simple` or `vve::complex`.
 
+Use `--all` to build Complex and Simple separately in one invocation on Windows, Linux or macOS. For example, `build_windows.cmd --all --no-tests` builds both Release variants without running CTest. Without `--no-tests`, each variant runs its normal test suite. Binaries remain in `bin/complex` and `bin/simple`; `--all` does not combine the engines into one executable.
+
 `complex` is the default. Select `simple` with `--simple` in any of the three platform build scripts, or override the CMake selector in a separate build directory:
 
 ```powershell
@@ -199,7 +201,7 @@ cmake --preset release-macos-arm64-llvm
 cmake --build --preset build-release-macos-arm64-llvm
 ```
 
-Complex executables are written to `bin/complex/<variant>/exe`; Simple executables stay in `bin/<variant>/exe`. Shared libraries on Linux and macOS are mirrored to the corresponding `lib` directory next to `exe`. Verification output follows the selected engine's output directory.
+Executables are written to `bin/<engine>/<variant>/exe`, for example `bin/simple/release/exe` or `bin/complex/release/exe`. Shared libraries on Linux and macOS are mirrored to the corresponding `lib` directory next to `exe`. Verification output follows the selected engine's output directory.
 
 VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/complex-vscode-debug` and `build/complex-vscode-release` and always the Ninja generator (needed for `import std`). The vcpkg triplet comes from the selected kit, or else from the host default in CMakeLists.txt (`x64-windows`, `x64-linux-llvm`, `arm64-osx`). Select these kits: `Homebrew LLVM arm64` on Apple Silicon macOS, `LLVM 18 libc++ (Linux)` on Linux (both defined in `.vscode/cmake-kits.json`), and a Visual Studio `amd64` kit on Windows.
 
@@ -303,7 +305,7 @@ Opt-in `setGpuTimingReadback(true)` diagnostics report fence-completed `gpu.tone
 
 With `BUILD_TESTING`, `vve_add_example_test(<target>)` in `examples/CMakeLists.txt` registers `game`, `testscene`, `sponza` and `simple_forward_demo` with `--frames 3` (`game` uses 180 frames and verifies crate collection) and a 60-second forward timeout. Each has a deferred counterpart using the same executable and public runtime API. These tests run from the repository root. Run all example tests with `ctest --test-dir build/complex-debug-linux -L example --output-on-failure`. The `simple_forward_demo` test passes `--output <build>/examples/simple_forward_demo/verify/simple_forward_demo_capture.png`; without `--output`, the example keeps its executable-relative capture path.
 
-Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (`postprocessing --frames 3 --all-effects`, which compiles and runs all 15 effects and fails on a non-zero exit code). Without `--all-effects`, `postprocessing` keeps its default chromatic, vignette, tonemap, greyscale and film grain chain. The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
+Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<engine>/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (`postprocessing --frames 3 --all-effects`, which compiles and runs all 15 effects and fails on a non-zero exit code). Without `--all-effects`, `postprocessing` keeps its default chromatic, vignette, tonemap, greyscale and film grain chain. The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
 
 ## Ring Racer
 
@@ -375,7 +377,7 @@ Out soundtrack. Music starts automatically; choose a track, adjust volume or
 pause music in the score overlay. Its music and original attribution are staged
 in `audio/v2` beside `game`. The vcpkg manifest enables the MP3 decoder.
 
-Run `bin/<variant>/exe/audio_demo` (`.exe` on Windows) for a complete example.
+Run `bin/<engine>/<variant>/exe/audio_demo` (`.exe` on Windows) for a complete example.
 Its original WAV is copied beside the executable; no launch script is required.
 See [the audio guide](docs/Audio.md) for the API, error handling and linking from
 your own project. Audio tests use a dummy device during CTest.

@@ -14,7 +14,7 @@ Release builds do none of this and pay nothing for it.
 
 1. Build Debug: `build_windows.cmd debug --no-tests` to compile without running tests, or `./build_linux.sh debug` on Linux. In a configured tree, `cmake --build <build> --parallel` also builds without invoking CTest.
 2. In RenderDoc choose *File → Launch Application*, set the executable, for
-   example `bin\debug\exe\light_shadow_debug.exe` with the arguments
+   example `bin\complex\debug\exe\light_shadow_debug.exe` with the arguments
    `--renderer deferred`, and press *Launch*.
 3. Press F12 (or Print Screen) in the program's window, or click *Capture Frame(s)
    Immediately* in RenderDoc. *Queue Capture* on frame N captures a fixed frame

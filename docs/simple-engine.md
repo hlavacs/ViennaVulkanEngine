@@ -33,9 +33,9 @@ the same game sources against the same VVEngine facade. On Windows, use
 After a Simple Release build on Windows, run these from the repository root:
 
 ```cmd
-bin\release\exe\game.exe --renderer forward
-bin\release\exe\racer.exe --renderer deferred
-bin\release\exe\island_delivery.exe --renderer deferred
+bin\simple\release\exe\game.exe --renderer forward
+bin\simple\release\exe\racer.exe --renderer deferred
+bin\simple\release\exe\island_delivery.exe --renderer deferred
 ```
 
 Both backends run all three examples. Hybrid GI, probe lighting, screen-space
