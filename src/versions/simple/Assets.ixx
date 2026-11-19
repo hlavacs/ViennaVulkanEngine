@@ -160,8 +160,9 @@ export namespace vve::simple {
 		[[nodiscard]] auto sceneRootNode(SceneHandle scene) const -> std::expected<NodeHandle, Error> {
 			const auto tree = sceneField(catalog_, scene, &AssetScene::tree);
 			if (!tree) { return std::unexpected(tree.error()); }
-			if (!(*tree)->root.valid()) { return std::unexpected(Error::missing_object); }
-			return (*tree)->root;
+			const auto root = (*tree)->root();
+			if (!root.valid()) { return std::unexpected(Error::missing_object); }
+			return root;
 		}
 		[[nodiscard]] auto sceneNodeChildren(SceneHandle scene, NodeHandle node) const -> std::expected<Vector<NodeHandle>, Error> {
 			const auto source = sceneWithNode(catalog_, scene, node);

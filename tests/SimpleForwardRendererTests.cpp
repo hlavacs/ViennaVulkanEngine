@@ -857,12 +857,6 @@ int main() {
    if (!hasCulledDraws()) { return 41; }
    if (!hasAmbientOnlyLightPacking() || !hasMultiWindowShadowGrowth()) { return 40; }
 
-   auto engine = vve::test::hiddenEngine("simple-forward-renderer-tests", vve::PixelExtent{.width = 64, .height = 64}, vve::MaxFrames{.value = vve::FrameCount{.value = 1}});
-   if (!engine.init()) { return 1; }
-
-   if (!hasValidationMessageCounter()) { return 30; }
-   auto &render_system = engine.renderSystem();
-   render_system.clearScene();
    if (!hasPublicRenderObjectLifetime() || !hasBackendObjectVisibilityUpdate() ||
        !hasBackendObjectTransformUpdate()) {
       return 23;
@@ -870,8 +864,15 @@ int main() {
    if (!hasBackendObjectCorrespondenceWithoutPublicHandle()) { return 24; }
    if (!hasSceneRemovalLifetime()) { return 25; }
    if (!hasPurgeUnusedAssetsLifetime()) { return 26; }
-   vve::simple::Scene point_shadow_scene{}; ///< Public scene-loading path carries multiple point lights.
    if (!hasRuntimeGpuObjectSynchronization()) { return 27; }
+
+   auto engine = vve::test::hiddenEngine("simple-forward-renderer-tests", vve::PixelExtent{.width = 64, .height = 64}, vve::MaxFrames{.value = vve::FrameCount{.value = 1}});
+   if (!engine.init()) { return 1; }
+   // The validation probe creates a Vulkan instance using SDL's initialized video backend.
+   if (!hasValidationMessageCounter()) { return 30; }
+   auto &render_system = engine.renderSystem();
+   render_system.clearScene();
+   vve::simple::Scene point_shadow_scene{}; ///< Public scene-loading path carries multiple point lights.
    point_shadow_scene.pointLights = {
       vve::simple::ForwardPointLight{.position = vve::Vec3{-2.0F, 2.75F, -1.25F},
                               .color = vve::Vec3{1.0F, 0.74F, 0.46F},

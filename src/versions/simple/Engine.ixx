@@ -20,7 +20,7 @@ export import :Audio;
 
 export namespace vve::simple {
 
-	/// @brief Educational simple engine shell with SDL windows and lightweight subsystems.
+	/// @brief Owns all runtime systems and windows; only one instance may exist at a time.
 	class Engine {
 	public:
 		Engine();
@@ -51,6 +51,11 @@ export namespace vve::simple {
 		[[nodiscard]] auto renderFrame()										-> std::expected<void, Error>;
 
 	private:
+		using InstanceSlot = std::unique_ptr<std::atomic_bool, void (*)(std::atomic_bool *)>; ///< Releases the process-wide claim on destruction.
+		[[nodiscard]] static auto claimInstance() -> InstanceSlot;
+
+		InstanceSlot instance_slot_{claimInstance()}; ///< Acquired first and released after all subsystems, including on constructor failure.
+
 		template <typename TOption> void applyOption(TOption &&);
 		[[nodiscard]] auto makeRenderSceneRelease() -> std::function<std::expected<void, Error>(SceneHandle)>;
 		[[nodiscard]] auto makeImportedAssetReadAccess()					-> ImportedAssetReadAccess;
@@ -71,6 +76,15 @@ export namespace vve::simple {
 		bool initialized_{false};														///< True after init() succeeds.
 		bool gui_initialization_attempted_{false};							///< Prevents retrying or logging failed GUI initialization each frame.
 	};
+
+	/// @brief Claims exclusive ownership before any subsystem is constructed.
+	auto Engine::claimInstance() -> InstanceSlot {
+		static std::atomic_bool occupied{false};
+		if (occupied.exchange(true, std::memory_order_acquire)) {
+			throw std::logic_error{"Only one ViennaVulkanEngine instance may exist at a time"};
+		}
+		return InstanceSlot{&occupied, [](std::atomic_bool *slot) { slot->store(false, std::memory_order_release); }};
+	}
 
 	/// @brief Creates an engine with default options.
 	inline Engine::Engine(){

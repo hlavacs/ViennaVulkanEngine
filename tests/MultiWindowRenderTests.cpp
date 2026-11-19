@@ -112,10 +112,12 @@ namespace {
 
 /// @brief Rejects unknown renderer ids at init and lets an entirely opted-out engine step without a GPU.
 [[nodiscard]] bool checkRendererSelection() {
-	auto invalid = vve::simple::Engine{vve::simple::Windows{.value = {
-		vve::WindowDesc{.id = "invalid", .extent = {64, 64}, .renderer_id = {"foo"}, .visible = false}}}};
-	const auto result = invalid.init();
-	if (result || result.error() != vve::Error::invalid_argument || invalid.windowSystem().windowCount() != 0U) { return false; }
+	{
+		auto invalid = vve::simple::Engine{vve::simple::Windows{.value = {
+			vve::WindowDesc{.id = "invalid", .extent = {64, 64}, .renderer_id = {"foo"}, .visible = false}}}};
+		const auto result = invalid.init();
+		if (result || result.error() != vve::Error::invalid_argument || invalid.windowSystem().windowCount() != 0U) { return false; }
+	}
 	auto disabled = vve::simple::Engine{vve::simple::Windows{.value = {
 		vve::WindowDesc{.id = "disabled", .extent = {64, 64}, .renderer_id = {"none"}, .visible = false}}}};
 	if (!disabled.init() || !disabled.renderFrame()) { return false; }

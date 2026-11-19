@@ -24,19 +24,25 @@ static_assert(BuildsFromLvalue<vve::EngineBuilder<int>>);
 bool transfersOwnedSystems() {
 	auto direct_resource = std::make_unique<int>(11);
 	const auto *direct_pointer = direct_resource.get();
-	auto direct = vve::Engine<OwnedSystem>{vve::makeUserSystems(OwnedSystem{std::move(direct_resource)})};
-	const bool direct_ok = direct.world().get<OwnedSystem>().value.get() == direct_pointer;
+	bool direct_ok{};
+	{
+		auto direct = vve::Engine<OwnedSystem>{vve::makeUserSystems(OwnedSystem{std::move(direct_resource)})};
+		direct_ok = direct.world().get<OwnedSystem>().value.get() == direct_pointer;
+	}
 
 	auto chained_resource = std::make_unique<int>(22);
 	const auto *chained_pointer = chained_resource.get();
-	auto chained = vve::EngineBuilder<OwnedSystem>{vve::makeUserSystems(OwnedSystem{std::make_unique<int>(0)})}
-		.applicationName("move-only-builder-tests")
-		.maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
-		.windows(vve::WindowSetups{})
-		.addWindow(vve::WindowSetup{}.id("unused"))
-		.userSystems(vve::makeUserSystems(OwnedSystem{std::move(chained_resource)}))
-		.build();
-	const bool chained_ok = chained.world().get<OwnedSystem>().value.get() == chained_pointer;
+	bool chained_ok{};
+	{
+		auto chained = vve::EngineBuilder<OwnedSystem>{vve::makeUserSystems(OwnedSystem{std::make_unique<int>(0)})}
+			.applicationName("move-only-builder-tests")
+			.maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
+			.windows(vve::WindowSetups{})
+			.addWindow(vve::WindowSetup{}.id("unused"))
+			.userSystems(vve::makeUserSystems(OwnedSystem{std::move(chained_resource)}))
+			.build();
+		chained_ok = chained.world().get<OwnedSystem>().value.get() == chained_pointer;
+	}
 
 	auto named_resource = std::make_unique<int>(33);
 	const auto *named_pointer = named_resource.get();
@@ -44,24 +50,43 @@ bool transfersOwnedSystems() {
 	(void)builder.applicationName("named-move-only-builder-tests");
 	auto named = std::move(builder).build();
 	const bool named_ok = named.world().get<OwnedSystem>().value.get() == named_pointer;
-	std::println("[engine_builder_move] direct={} chained={} named={} values={},{},{}", direct_ok, chained_ok,
-		named_ok, direct_ok ? *direct.world().get<OwnedSystem>().value : -1,
-		chained_ok ? *chained.world().get<OwnedSystem>().value : -1,
-		named_ok ? *named.world().get<OwnedSystem>().value : -1);
+	std::println("[engine_builder_move] direct={} chained={} named={}", direct_ok, chained_ok, named_ok);
 	return direct_ok && chained_ok && named_ok;
 }
 
 /// @brief Const and mutable copyable builders keep their systems available for repeated builds.
 bool preservesCopyableSystems() {
 	auto builder = vve::EngineBuilder<int>{vve::makeUserSystems(44)};
-	auto first = builder.build();
-	auto second = std::as_const(builder).build();
-	first.world().get<int>() = 55;
-	auto third = builder.build();
-	const bool independent = second.world().get<int>() == 44 && third.world().get<int>() == 44;
-	std::println("[engine_builder_copy] independent={} values={},{},{}", independent,
-		first.world().get<int>(), second.world().get<int>(), third.world().get<int>());
+	{
+		auto first = builder.build();
+		first.world().get<int>() = 55;
+	}
+	const auto read = [](auto &source) {
+		auto engine = source.build();
+		return engine.world().template get<int>();
+	};
+	const auto second = read(std::as_const(builder));
+	const auto third = read(builder);
+	const bool independent = second == 44 && third == 44;
+	std::println("[engine_builder_copy] independent={} values={},{}", independent, second, third);
 	return independent;
+}
+
+/// @brief Rejects overlapping construction across facade specializations and allows reuse after destruction.
+bool enforcesSingleInstance() {
+	bool rejected{};
+	{
+		vve::Engine<> first{};
+		try {
+			vve::Engine<int> second{};
+		} catch (const std::logic_error &) {
+			rejected = true;
+		}
+	}
+	auto replacement = vve::EngineBuilder<int>{vve::makeUserSystems(44)}.build();
+	const bool reusable = replacement.world().get<int>() == 44;
+	std::println("[engine_instance] second_rejected={} replacement_created={}", rejected, reusable);
+	return rejected && reusable;
 }
 
 } // namespace
@@ -70,5 +95,6 @@ bool preservesCopyableSystems() {
 int main() {
 	if (!transfersOwnedSystems()) { return 1; }
 	if (!preservesCopyableSystems()) { return 2; }
+	if (!enforcesSingleInstance()) { return 3; }
 	return 0;
 }

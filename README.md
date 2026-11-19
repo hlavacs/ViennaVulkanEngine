@@ -92,6 +92,8 @@ Fallible facade calls return `std::expected<T, Error>`, and `errorName()` names 
 
 `EngineBuilder` accepts move-only user systems, including systems without a default constructor, through an explicit `UserSystems` bundle. Building a temporary builder, including after fluent calls, transfers its systems into the engine. For a named builder, use `std::move(builder).build()` to consume it; its systems are moved-from afterward. Calling `build()` on an lvalue copies the configuration and remains available when all systems are copyable.
 
+Only one engine instance may exist per process. Constructing another (including through `EngineBuilder::build()`) throws `std::logic_error` until the first is destroyed. Use `WindowSetups` or repeated `EngineBuilder::addWindow()` calls to create multiple windows within that engine.
+
 ### Windows build and launch
 
 From an ordinary PowerShell window in the repository, run:

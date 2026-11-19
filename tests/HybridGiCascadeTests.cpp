@@ -57,11 +57,9 @@ std::optional<std::pair<Vec3,Vec3>> mainShadow(RendererBackend backend) {
     return std::pair{*unroofed,*roofed};
 }
 /// @brief Off-frustum wall bounce must follow a roof that only shadows it from the sun, using independent capture depth.
-bool shadowed(simple::Engine &engine) {
-    const auto original = mainShadow(RendererBackend::deferred), hybrid = mainShadow(RendererBackend::hybrid_gi);
-    if (!original || !hybrid) return false;
-    const auto directDelta = std::max(test::rgbDelta(original->first,hybrid->first),test::rgbDelta(original->second,hybrid->second));
-    const float reference = redShift(original->second)/redShift(original->first);
+bool shadowed(simple::Engine &engine, const std::pair<Vec3,Vec3> &original, const std::pair<Vec3,Vec3> &hybrid) {
+    const auto directDelta = std::max(test::rgbDelta(original.first,hybrid.first),test::rgbDelta(original.second,hybrid.second));
+    const float reference = redShift(original.second)/redShift(original.first);
     // The main-view reference includes the existing 0.35 shadow floor. 0.15 allows finite-face integration and penumbrae.
     const float limit = reference + .15F;
     auto &r = engine.renderSystem(); const auto objects = shadowScene(engine); if (!objects) return false;
@@ -245,9 +243,13 @@ int main(int argc, char **argv) {
     const std::array modes{"shadowed-capture","coarse-bounce","continuity","coarse-scroll","teleport","memory","memory-low"};
     if (argc>2 || std::ranges::find(modes,mode)==modes.end()) return 3;
     directory/=mode; std::filesystem::create_directories(directory);
+    const bool compareShadows = mode == "shadowed-capture";
+    const auto original = compareShadows ? mainShadow(RendererBackend::deferred) : std::nullopt;
+    const auto hybrid = compareShadows ? mainShadow(RendererBackend::hybrid_gi) : std::nullopt;
+    if (compareShadows && (!original || !hybrid)) return 2;
     auto engine=test::hiddenEngine("probe-cascades",PixelExtent{128,128}); auto &r=engine.renderSystem();
     if (!engine.init() || !r.setRendererBackend(RendererBackend::hybrid_gi) || !r.setAnimationTime(AnimationTime{})) return 1;
-    const bool pass=mode=="shadowed-capture" ? shadowed(engine) : mode=="coarse-bounce" ? coarseBounce(engine) : mode=="continuity" ? continuity(engine) :
+    const bool pass=compareShadows ? shadowed(engine,*original,*hybrid) : mode=="coarse-bounce" ? coarseBounce(engine) : mode=="continuity" ? continuity(engine) :
         mode=="coarse-scroll" ? scroll(engine) : mode=="teleport" ? teleport(engine) : memory(engine,mode=="memory-low");
     auto &renderer=r.forward(); if (renderer.targets.empty()) return 1;
     VkPhysicalDeviceProperties device{}; vkGetPhysicalDeviceProperties(renderer.physicalDevice.physicalDevice,&device);

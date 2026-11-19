@@ -29,18 +29,24 @@ export namespace vve::simple {
 	};
 
 	/// @brief Tree view over the generic graph, keeping only one root handle as tree-specific state.
-	template <typename THandle> class Tree : public Graph<THandle> {
+	template <typename THandle> class Tree : private Graph<THandle> {
 	private:
 		/// @brief Reused graph storage and traversal implementation.
 		using Base = Graph<THandle>;
 
 	public:
+		using Base::contains;
+		using Base::nodes;
+
 		[[nodiscard]] std::expected<void, Error> setRoot(THandle handle);
+		/// @brief Returns the fixed root handle, or an invalid handle for an empty tree.
+		[[nodiscard]] THandle root() const { return root_; }
 		[[nodiscard]] std::expected<void, Error> addChild(THandle parent, THandle child);
 		[[nodiscard]] auto children(THandle handle) const										-> std::expected<Vector<THandle>, Error>;
 		[[nodiscard]] auto parent(THandle handle) const											-> std::expected<std::optional<THandle>, Error>;
 
-		THandle root{};									///< Root node handle; invalid means empty tree.
+	private:
+		THandle root_{}; ///< Fixed root node handle; invalid means empty tree.
 	};
 
 } // namespace vve::simple
@@ -86,24 +92,22 @@ namespace vve::simple {
 		return result;
 	}
 
-	/// @brief Sets or replaces the root handle.
+	/// @brief Sets the root of an empty tree; setting the same handle again is harmless.
 	template <typename THandle> std::expected<void, Error> Tree<THandle>::setRoot(THandle handle) {
 		if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
-		root = handle;
-		if (Base::contains(handle)) { return {}; }
-		return Base::addNode(handle);
+		if (root_ == handle) { return {}; }
+		if (root_.valid()) { return std::unexpected(Error::invalid_argument); }
+		if (auto added = Base::addNode(handle); !added) { return added; }
+		root_ = handle;
+		return {};
 	}
 
-	/// @brief Adds a child node and connects it to an existing parent.
+	/// @brief Connects a new child to an existing parent without changing the root or creating a cycle.
 	template <typename THandle>
 	std::expected<void, Error> Tree<THandle>::addChild(THandle parent_node, THandle child) {
 		if (!Base::contains(parent_node)) { return std::unexpected(Error::missing_object); }
-		if (Base::contains(child)) {
-			const auto current_parent = parent(child);
-			if (current_parent && current_parent->has_value()) { return std::unexpected(Error::duplicate_object); }
-		} else if (auto added = Base::addNode(child); !added) {
-			return added;
-		}
+		if (child == root_ || child == parent_node) { return std::unexpected(Error::invalid_argument); }
+		if (auto added = Base::addNode(child); !added) { return added; }
 		Base::addEdge(parent_node, child);
 		return {};
 	}

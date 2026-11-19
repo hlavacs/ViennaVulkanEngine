@@ -135,9 +135,12 @@ bool constructorCallbacks(const std::filesystem::path &path) {
 		return render.removeSceneInstance(*instance) && assets.unloadScene(*scene) &&
 			!assets.containsScene(*scene) && assets.catalogEntryCount() == 0;
 	};
-	vve::simple::Engine default_engine{};
+	bool default_ok{};
+	{
+		vve::simple::Engine default_engine{};
+		default_ok = verifies_callback(default_engine);
+	}
 	auto hidden_engine = vve::test::hiddenEngine("asset-unload-constructor-tests", vve::PixelExtent{640, 480});
-	const bool default_ok = verifies_callback(default_engine);
 	const bool variadic_ok = verifies_callback(hidden_engine);
 	std::println("[asset_unload_constructors] default={} imported_variadic={}", default_ok, variadic_ok);
 	return default_ok && variadic_ok;

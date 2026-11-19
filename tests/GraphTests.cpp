@@ -26,7 +26,7 @@ int main() {
    vve::simple::Tree<NodeHandle> tree{};
    if (!tree.setRoot(root) || !tree.addChild(root, child) || !tree.addChild(child, grandchild) ||
        !tree.addChild(root, sibling) || !tree.setRoot(root)) { return 5; }
-   if (tree.root != root || !std::ranges::equal(tree.nodes(), expected)) { return 6; }
+   if (tree.root() != root || !std::ranges::equal(tree.nodes(), expected)) { return 6; }
    const auto duplicate_child = tree.addChild(root, child);
    const auto missing_parent = tree.addChild(NodeHandle{}, sibling);
    if (duplicate_child || duplicate_child.error() != vve::Error::duplicate_object ||
@@ -34,6 +34,16 @@ int main() {
        !std::ranges::equal(tree.nodes(), expected)) { return 7; }
    const auto parent = tree.parent(grandchild);
    if (!parent || *parent != child) { return 8; }
+   const auto root_cycle = tree.addChild(grandchild, root);
+   const auto self_cycle = tree.addChild(child, child);
+   const auto new_root = tree.setRoot(child);
+   const auto root_parent = tree.parent(root);
+   const auto leaf_children = tree.children(grandchild);
+   if (root_cycle || root_cycle.error() != vve::Error::invalid_argument ||
+       self_cycle || self_cycle.error() != vve::Error::invalid_argument ||
+       new_root || new_root.error() != vve::Error::invalid_argument ||
+       tree.root() != root || !root_parent || root_parent->has_value() ||
+       !leaf_children || !leaf_children->empty() || !std::ranges::equal(tree.nodes(), expected)) { return 9; }
    std::println("D7 graph_nodes={} tree_nodes={} creation_order=1 rejected_insertions_preserve_order=1",
       graph.nodes().size(), tree.nodes().size());
    return 0;
