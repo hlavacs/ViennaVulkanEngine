@@ -47,18 +47,26 @@ if not exist "%VSWHERE%" (echo vswhere.exe not found. Install Visual Studio with
 set "VSINSTALL="
 for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
 if not defined VSINSTALL (echo No Visual Studio with the C++ toolchain was found. & goto fail)
-echo Initializing MSVC environment from "%VSINSTALL%" ...
-call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul
+rem Explicitly select this installation's default, even in a pre-update developer prompt.
+set "MSVC_SETUP=%VSINSTALL%\VC\Auxiliary\Build"
+set "MSVC_VERSION="
+if exist "%MSVC_SETUP%\Microsoft.VCToolsVersion.default.txt" set /p "MSVC_VERSION="<"%MSVC_SETUP%\Microsoft.VCToolsVersion.default.txt"
+if not defined MSVC_VERSION (echo Cannot read the default MSVC version under "%MSVC_SETUP%". Repair the x64 C++ tools in Visual Studio Installer. & goto fail)
+set "MSVC_CL=%VSINSTALL%\VC\Tools\MSVC\%MSVC_VERSION%\bin\Hostx64\x64\cl.exe"
+if not exist "%MSVC_CL%" (echo Default MSVC compiler not found at "%MSVC_CL%". Repair the x64 C++ tools in Visual Studio Installer. & goto fail)
+echo Initializing MSVC %MSVC_VERSION% from "%VSINSTALL%" ...
+call "%MSVC_SETUP%\vcvars64.bat" -vcvars_ver=%MSVC_VERSION% >nul
 if errorlevel 1 goto refresh_msvc
-if defined VCToolsInstallDir if exist "%VCToolsInstallDir%\bin\Hostx64\x64\cl.exe" goto msvc_ready
+if defined VCToolsInstallDir if "%VCToolsVersion%"=="%MSVC_VERSION%" if exist "%VCToolsInstallDir%\bin\Hostx64\x64\cl.exe" goto msvc_ready
 
 :refresh_msvc
 rem A Developer Command Prompt opened before an update can retain a removed toolset.
-call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" /clean_env >nul
-call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
+call "%MSVC_SETUP%\vcvars64.bat" /clean_env >nul
+call "%MSVC_SETUP%\vcvars64.bat" -vcvars_ver=%MSVC_VERSION%
 if errorlevel 1 goto fail
 
 :msvc_ready
+if not "%VCToolsVersion%"=="%MSVC_VERSION%" (echo Visual Studio could not activate MSVC %MSVC_VERSION%. & goto fail)
 if not defined VCToolsInstallDir (echo Visual Studio did not report a C++ toolset directory. & goto fail)
 if not exist "%VCToolsInstallDir%\bin\Hostx64\x64\cl.exe" (echo cl.exe not found in "%VCToolsInstallDir%". Repair the x64 C++ tools in Visual Studio Installer. & goto fail)
 set "PATH=%VCToolsInstallDir%\bin\Hostx64\x64;%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
@@ -94,12 +102,16 @@ if "%CLEAN%"=="1" (
 rem --- Configure with Ninja (single-config); import-std flags are set by CMakeLists.txt ---
 set "STAGE=CMake configuration"
 set "FRESH="
+for %%C in ("%MSVC_CL%") do set "SELECTED_CL=%%~fsC"
 if exist "%BUILD_DIR%\CMakeCache.txt" (
+    for /f "tokens=1,* delims==" %%A in ('findstr /b /c:"CMAKE_CXX_COMPILER:FILEPATH=" "%BUILD_DIR%\CMakeCache.txt"') do (
+        for %%C in ("%%B") do if /i not "%%~fsC"=="%SELECTED_CL%" set "FRESH=--fresh"
+    )
     for /f "tokens=1,* delims==" %%A in ('findstr /b /c:"CMAKE_LINKER:FILEPATH=" "%BUILD_DIR%\CMakeCache.txt"') do (
         if not exist "%%B" set "FRESH=--fresh"
     )
 )
-if defined FRESH echo Refreshing the CMake cache because the previous toolset was removed...
+if defined FRESH echo Refreshing the CMake cache for the selected MSVC toolset...
 cmake %FRESH% -S . -B "%BUILD_DIR%" -G Ninja ^
     -DCMAKE_BUILD_TYPE=%CONFIG% ^
     -DVVE_DEFAULT_VULKAN_ICD=system ^
