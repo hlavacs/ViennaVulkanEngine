@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions EnableDelayedExpansion
+setlocal EnableExtensions DisableDelayedExpansion
 
 rem Builds the Vienna Vulkan Engine on Windows using the Ninja generator, which
 rem is required for C++23 `import std` (the Visual Studio generator does not
@@ -39,6 +39,9 @@ if not defined VULKAN_SDK (echo VULKAN_SDK is not set. Install the Vulkan SDK fi
 if not exist "%VULKAN_SDK%\Include\vulkan\vulkan.h" (echo Vulkan headers not found under "%VULKAN_SDK%". Check VULKAN_SDK. & goto fail)
 
 rem --- Always refresh MSVC and prefer Visual Studio CMake over other PATH entries ---
+rem VsDevCmd uses dir /b to enumerate its toolchain scripts; inherited options such as /s break that list.
+set "DIRCMD="
+set "REQUESTED_VCPKG_ROOT=%VCPKG_ROOT%"
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if not exist "%VSWHERE%" (echo vswhere.exe not found. Install Visual Studio with the C++ workload. & goto fail)
 set "VSINSTALL="
@@ -46,8 +49,20 @@ for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -prerelease -products * 
 if not defined VSINSTALL (echo No Visual Studio with the C++ toolchain was found. & goto fail)
 echo Initializing MSVC environment from "%VSINSTALL%" ...
 call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul
+if errorlevel 1 goto refresh_msvc
+if defined VCToolsInstallDir if exist "%VCToolsInstallDir%\bin\Hostx64\x64\cl.exe" goto msvc_ready
+
+:refresh_msvc
+rem A Developer Command Prompt opened before an update can retain a removed toolset.
+call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" /clean_env >nul
+call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
 if errorlevel 1 goto fail
-set "PATH=%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
+
+:msvc_ready
+if not defined VCToolsInstallDir (echo Visual Studio did not report a C++ toolset directory. & goto fail)
+if not exist "%VCToolsInstallDir%\bin\Hostx64\x64\cl.exe" (echo cl.exe not found in "%VCToolsInstallDir%". Repair the x64 C++ tools in Visual Studio Installer. & goto fail)
+set "PATH=%VCToolsInstallDir%\bin\Hostx64\x64;%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
+if defined REQUESTED_VCPKG_ROOT set "VCPKG_ROOT=%REQUESTED_VCPKG_ROOT%"
 
 for %%T in (cl.exe cmake.exe ctest.exe ninja.exe) do (
     where %%T >nul 2>nul
@@ -78,7 +93,14 @@ if "%CLEAN%"=="1" (
 
 rem --- Configure with Ninja (single-config); import-std flags are set by CMakeLists.txt ---
 set "STAGE=CMake configuration"
-cmake -S . -B "%BUILD_DIR%" -G Ninja ^
+set "FRESH="
+if exist "%BUILD_DIR%\CMakeCache.txt" (
+    for /f "tokens=1,* delims==" %%A in ('findstr /b /c:"CMAKE_LINKER:FILEPATH=" "%BUILD_DIR%\CMakeCache.txt"') do (
+        if not exist "%%B" set "FRESH=--fresh"
+    )
+)
+if defined FRESH echo Refreshing the CMake cache because the previous toolset was removed...
+cmake %FRESH% -S . -B "%BUILD_DIR%" -G Ninja ^
     -DCMAKE_BUILD_TYPE=%CONFIG% ^
     -DVVE_DEFAULT_VULKAN_ICD=system ^
     -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=%ENGINE% ^

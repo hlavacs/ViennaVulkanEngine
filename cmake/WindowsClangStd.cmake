@@ -1,6 +1,10 @@
 # CMake cannot yet discover import std for Clang with Microsoft's STL. Compile the
 # installed module sources with Clang so both the engine and libclang can read them.
 set(CMAKE_CXX_MODULE_STD OFF)
+# A Visual Studio update can remove the toolset recorded in an existing build.
+if(DEFINED VVE_MSVC_MODULE_DIR AND NOT EXISTS "${VVE_MSVC_MODULE_DIR}/std.ixx")
+   unset(VVE_MSVC_MODULE_DIR CACHE)
+endif()
 find_path(VVE_MSVC_MODULE_DIR std.ixx
    HINTS "$ENV{VCToolsInstallDir}/modules" ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}
    PATH_SUFFIXES "" ../modules
