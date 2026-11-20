@@ -1,0 +1,19 @@
+{
+ "phase": "specification",
+ "implementation_queue": [],
+ "implementation_cursor": 0,
+ "test_command": [
+  "ctest",
+  "--preset",
+  "debug"
+ ],
+ "approved_approach": "",
+ "implementation_batch_size": 1,
+ "mind_map": {
+  "expanded": []
+ },
+ "implementation_scope": "queue_order",
+ "implementation_override": "",
+ "auto_approve": false,
+ "implementation_grouping": "single_entity"
+}
