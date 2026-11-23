@@ -8,56 +8,6 @@ import ColorSpace;
 import Surface;
 import raytracing;
 
-IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
-    // Inputs: RNG. Output: first-bounce integration state.
-    float2 launchID = (float2)DispatchRaysIndex().xy;        // Current pixel (x,y)
-    float2 launchSize = (float2)DispatchRaysDimensions().xy; // Image size (width,height)
-
-    IntersectionRecord its;
-
-    RayDesc cameraRay = getInitialRay(launchID, launchSize);
-
-    its.position = inPosition[int2(launchID)].xyz;
-    its.normal = inNormal[int2(launchID)].xyz;
-    its.frame = Frame(its.normal);
-    its.direction = cameraRay.Direction;
-
-    MaterialRecord material;
-    material.albedo = inAlbedoAlpha[int2(launchID)].xyz;
-    material.alpha = inAlbedoAlpha[int2(launchID)].w;
-    //Incorrect but not needed
-    material.normal = float3(0.0,0.0,1.0);
-    material.roughness = inSpec[int2(launchID)].x;
-    material.metalness = inSpec[int2(launchID)].y;
-    material.ior = inSpec[int2(launchID)].z;
-
-    float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
-
-    if (dot(its.normal, its.direction) > 0.0) {
-        its.normal *= -1.0;
-        shadingNormal *= -1.0;
-    }
-
-    material.shadingFrame = Frame(shadingNormal);
-
-    float3 directLight = directRaycast(its, material, sampler);
-    
-    BSDFQueryRecord record = constructBSDFRecord(its, material, false);
-
-    float3 bsdf = samplePrincipled(record, material, sampler);
-    // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
-    RayDesc indirectRay = getRayOffset(its, record.woWorld);
-
-    IntegrationStepQueryRecord integrationStep;
-
-    integrationStep.directLight = directLight;
-    integrationStep.indirectLight = float3(0.0);
-    integrationStep.throughput = bsdf;
-    integrationStep.indirectRay = indirectRay;
-
-    return integrationStep;
-}
-
 float3 groundTruthLightRadiance(in uint lightIndex, in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
     LightSource light = lightBuffer[lightIndex];
     EmitterRecord record = sampleLightSource(light, its.position, sampler);

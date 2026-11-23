@@ -95,5 +95,11 @@ slangc rtbasic.slang -entry rmissMain -target spirv -o miss.rmiss.spv -DRAY_TRAC
 rem --- Closest hit shader ---
 slangc rtbasic.slang -entry rchitMain -target spirv -o closesthit.rchit.spv -DRAY_TRACING
 
+rem --- Raygen shader ---
+slangc RestirTemporal.slang -entry rgenMain -target spirv -o raygen_restir_temporal.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc RestirSpatial.slang -entry rgenMain -target spirv -o raygen_restir_spatial.rgen.spv -DRAY_TRACING
+
 echo Done.
 pause

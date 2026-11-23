@@ -1190,14 +1190,12 @@ namespace vve {
         limitCalculation = new PipelineFilter(device, physicalDevice, commandManager, limitDescriptors, vplCacheSize, VkExtent2D(16, 16), "shaders/PathTracing/IR_Set_Replacment_Limits.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         limitCalculation->initComputePipeline();
 
-        std::cout << "got to vplGenerationEvolutionaryReplacment \n";
         vplGenerationEvolutionaryReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, vplGenerationDescriptors, vplCacheSize, "shaders/PathTracing/IR_VPL_Generation_Evolutionary.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
         vplGenerationEvolutionaryReplacment->bindRenderTarget(normalTarget);
         vplGenerationEvolutionaryReplacment->bindRenderTarget(positionTarget);
 
         vplGenerationEvolutionaryReplacment->initRayTracingPipeline();
 
-        std::cout << "got after vplGenerationEvolutionaryReplacment \n";
         
         //get render Settings
 
@@ -1316,6 +1314,8 @@ namespace vve {
         restirLVC_temporal_descriptors_combined->update();
         restirLVC_spatial_descriptors_combined->update();
 
+        vplGenerationDescriptors->update();
+
         raytracer->setExtent(swapchain->getExtent());
         InstantRadiosityTesting->setExtent(swapchain->getExtent());
         InstantRadiosityNaiveSampling->setExtent(swapchain->getExtent());
@@ -1398,6 +1398,12 @@ namespace vve {
             restirGI_spatial->recordCommandBuffer(currentFrame);
             break;
         }
+        case  vvh::RenderMethode::RESTIRDI:
+        {
+            restir_temporal->recordCommandBuffer(currentFrame);
+            restir_spatial->recordCommandBuffer(currentFrame);
+            break;
+        }
         case  vvh::RenderMethode::RESTIRLVC:
         {
             sumResetPass->recordCommandBuffer(currentFrame);
@@ -1446,7 +1452,6 @@ namespace vve {
             
             //this has to be moved after the restir step, meaning first frame is just black
             //vplGenerationRandomReplacment->recordCommandBuffer(currentFrame);
-
             mortonCode->recordCommandBuffer(currentFrame);
 
             histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);

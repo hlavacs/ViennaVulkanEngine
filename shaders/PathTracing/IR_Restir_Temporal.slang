@@ -192,6 +192,10 @@ void rgenMain()
                 // restrict influence from past samples.
                 temporalReservoirVPL.M = min(MAX_TEMPORAL_INFLUENCE_GI * reservoirVPL.M, temporalReservoirVPL.M);
                 reservoirVPL = CombineReservoirsVPL(reservoirVPL, temporalReservoirVPL, vpl, vplTemporal, its, material, sampler, vpl);
+
+                float p_hat = length(getOccludedContributionFromVPL(its, material, vpl));
+                reservoirVPL.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoirVPL.W_sum / reservoirVPL.M : 0.0;
+                
             } else {
                 // find  best matching valid history from  the neighbours
                 float bestDistance = 1000.0;
@@ -225,6 +229,9 @@ void rgenMain()
 
                 if (foundValidReservoir) {
                     reservoirVPL = CombineReservoirsVPL(reservoirVPL, bestMatchReservoir, vpl, bestVPL, its, material, sampler, vpl);
+
+                    float p_hat = length(getOccludedContributionFromVPL(its, material, vpl));
+                    reservoirVPL.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoirVPL.W_sum / reservoirVPL.M : 0.0;
                 }
             }   
         }

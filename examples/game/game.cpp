@@ -202,6 +202,9 @@ class MyGame : public vve::System {
                     case 8:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRIRNOREPLACMENT;
                         break;
+                    case 9:
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIRDI;
+                        break;
                     }
 
 
@@ -265,7 +268,8 @@ class MyGame : public vve::System {
             "Restir IR",
             "IR Testing",
             "IR",
-            "Restir IR No Replacment"
+            "Restir IR No Replacment",
+            "Restir  DI"
         };
 
         std::vector<std::string> illuminationDomainOptions = {

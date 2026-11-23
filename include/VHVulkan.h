@@ -269,7 +269,8 @@ namespace vvh {
 		RESTIRIR,
 		IRTESTING,
 		IR,
-		RESTIRIRNOREPLACMENT
+		RESTIRIRNOREPLACMENT,
+		RESTIRDI
 	};
 
 	enum  IlluminationDomain {

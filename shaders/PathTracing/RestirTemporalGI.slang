@@ -177,6 +177,9 @@ void rgenMain()
                     temporalReservoirGI.age++;
                     
                     float targetPDF = getApproximateRadianceFromReservoir(temporalReservoirGI, its, material);
+
+                    //float targetPDF = length(getGroundTruthRadianceFromReservoir(temporalReservoirGI, its, material));
+
                     if (CombineReservoirsGI(reservoirGI, temporalReservoirGI, targetPDF, sampler)) {
                         selectedTargetPdf = targetPDF;
                     }
@@ -192,6 +195,14 @@ void rgenMain()
         float normalizationDenominator = selectedTargetPdf * float(reservoirGI.M);
 
         finalizeGIResampling(reservoirGI, normalizationNumerator, normalizationDenominator);
+
+        //include visibility
+        /*
+        float pHat = length(getGroundTruthRadianceFromReservoir(reservoirGI, its, material));
+        if (pHat == 0.0) {
+            reservoirGI.W_sum = 0.0;
+        }
+            */
 
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
         storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
