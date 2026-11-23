@@ -1,6 +1,6 @@
 import Reservoir;
 import ReservoirGI;
-import ReservoirLVC;
+import IR_Reservoir;
 
 [[vk::binding(0, 0)]]
 cbuffer UniformBufferObject
@@ -50,10 +50,10 @@ RWStructuredBuffer<ReservoirGI> inReservoirGI;
 RWStructuredBuffer<ReservoirGI> outReservoirGI;
 
 [[vk::binding(11, 0)]]
-RWStructuredBuffer<ReservoirLVC> inReservoirLVC;
+RWStructuredBuffer<ReservoirVPL> inReservoirVPL;
 
 [[vk::binding(12, 0)]]
-RWStructuredBuffer<ReservoirLVC> outReservoirLVC;
+RWStructuredBuffer<ReservoirVPL> outReservoirVPL;
 
 void clampReadID(inout int2 readID, in int2 launchSize) {
     if (readID.x < 0) {
@@ -117,7 +117,7 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     //clamped out of bounds
     storeReservoir(readReservoir(predictedIDPrev, launchSize, inReservoir), launchID, launchSize, outReservoir);
     storeReservoirGI(readReservoirGI(predictedIDPrev, launchSize, inReservoirGI), launchID, launchSize, outReservoirGI);
-    storeReservoirLVC(readReservoirLVC(predictedIDPrev, launchSize, inReservoirLVC), launchID, launchSize, outReservoirLVC);
+    storeReservoirVPL(readReservoirVPL(predictedIDPrev, launchSize, inReservoirVPL), launchID, launchSize, outReservoirVPL);
 
     //discard out of bounds
     /*

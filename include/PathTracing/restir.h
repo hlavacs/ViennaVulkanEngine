@@ -132,13 +132,13 @@ namespace vve {
 
     //16 bytes
     // also used for restir IR
-    struct ReservoirLVC {
+    struct ReservoirIR {
         uint32_t lightSelected;
         float lightWeight;
         float W_sum;
         uint32_t M;
 
-        ReservoirLVC() {
+        ReservoirIR() {
             lightSelected = 0;
             lightWeight = 0.0;
             W_sum = 0.0;

@@ -8,12 +8,6 @@ slangc combinePass.slang -entry main -target spirv -o combinePass.spv
 
 slangc reprojectionPass.slang -entry main -target spirv -o reprojectionPass.spv -fvk-use-scalar-layout
 
-slangc LVC_importance_sum.slang -entry main -target spirv -o importanceReduction.spv
-
-slangc LVC_keep_sum.slang -entry main -target spirv -o keepProbReduction.spv
-
-slangc LVC_reset.slang -entry main -target spirv -o sumReset.spv
-
 
 slangc IR_Morton_Code.slang -entry main -target spirv -o IR_Morton_Code.spv -fvk-use-scalar-layout
 
@@ -46,30 +40,6 @@ slangc RestirTemporalGI.slang -entry rgenMain -target spirv -o raygen_restirGI_t
 
 rem --- Raygen shader ---
 slangc RestirSpatialGI.slang -entry rgenMain -target spirv -o raygen_restirGI_spatial.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout
-
-rem --- Raygen shader ---
-slangc Bidirectional_Integrator.slang -entry rgenMain -target spirv -o raygen_bidirectional.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc LVC_generation_Full.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_full.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc LVC_generation_random_replacment.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_random_replacment.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc LVC_generation_weighted_replacment.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_weighted_replacment.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc RestirTemporalLVC.slang -entry rgenMain -target spirv -o raygen_restirLVC_temporal.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc RestirSpatialLVC.slang -entry rgenMain -target spirv -o raygen_restirLVC_spatial.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc RestirLVC_Combined_Temporal.slang -entry rgenMain -target spirv -o raygen_restirLVC_temporal_combined.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc RestirLVC_Combined_Spatial.slang -entry rgenMain -target spirv -o raygen_restirLVC_spatial_combined.rgen.spv -DRAY_TRACING
 
 rem --- Raygen shader ---
 slangc IR_VPL_Generation_Random_Replacment.slang -entry rgenMain -target spirv -o raygen_vpl_generation_random_replacment.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout

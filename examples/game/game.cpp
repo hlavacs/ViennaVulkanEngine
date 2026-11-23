@@ -176,34 +176,22 @@ class MyGame : public vve::System {
                     switch (current_render_methode)
                     {
                     case 0:
-                        m_renderSettings().methode = vvh::RenderMethode::BACKWARD;
+                        m_renderSettings().methode = vvh::RenderMethode::PATHTRACING;
                         break;
                     case 1:
-                        m_renderSettings().methode = vvh::RenderMethode::FORWARD;
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIR;
                         break;
                     case 2:
-                        m_renderSettings().methode = vvh::RenderMethode::RESTIRGI;
-                        break;
-                    case 3:
-                        m_renderSettings().methode = vvh::RenderMethode::RESTIRLVC;
-                        break;
-                    case 4:
-                        m_renderSettings().methode = vvh::RenderMethode::RESTIRLVCCOMBINED;
-                        break;
-                    case 5:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRIR;
                         break;
-                    case 6:
+                    case 3:
                         m_renderSettings().methode = vvh::RenderMethode::IRTESTING;
                         break;
-                    case 7:
+                    case 4:
                         m_renderSettings().methode = vvh::RenderMethode::IR;
                         break;
-                    case 8:
+                    case 5:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRIRNOREPLACMENT;
-                        break;
-                    case 9:
-                        m_renderSettings().methode = vvh::RenderMethode::RESTIRDI;
                         break;
                     }
 
@@ -260,16 +248,12 @@ class MyGame : public vve::System {
 		float m_volume{MIX_MAX_VOLUME / 2.0};
 
         std::vector<std::string> renderMethodeOptions = {
-            "Backward",
-            "Forward",
-            "RestirGI",
-            "RestirLVC",
-            "RestirLVC Combined",
+            "Path Tracing",
+            "Restir",
             "Restir IR",
             "IR Testing",
             "IR",
-            "Restir IR No Replacment",
-            "Restir  DI"
+            "Restir IR No Replacment"
         };
 
         std::vector<std::string> illuminationDomainOptions = {

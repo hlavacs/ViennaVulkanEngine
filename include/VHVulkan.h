@@ -261,16 +261,12 @@ namespace vvh {
 	};
 
 	enum  RenderMethode {
-		BACKWARD,
-		FORWARD,
-		RESTIRGI,
-		RESTIRLVC,
-		RESTIRLVCCOMBINED,
+		PATHTRACING,
+		RESTIR,
 		RESTIRIR,
 		IRTESTING,
 		IR,
-		RESTIRIRNOREPLACMENT,
-		RESTIRDI
+		RESTIRIRNOREPLACMENT
 	};
 
 	enum  IlluminationDomain {

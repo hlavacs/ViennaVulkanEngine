@@ -56,27 +56,19 @@ namespace vve {
 
 		void createCommonDescriptors();
 		void createRtDescriptors();
-		void createBidirectionalDescriptors();
 		void createRtTargetsDescriptors();
-
-		void createBidirectionalTargetsDescriptors();
-		void createLightVertexGenerationDescriptors();
-
-		void createReductionDescriptors();
 
 		void createCombinePassDescriptors();
 		void createReprojectPassDescriptors();
+
 		void createRestirTemporalDescriptors();
 		void createRestirSpatialDescriptors();
 
 		void createRestirGITemporalDescriptors();
 		void createRestirGISpatialDescriptors();
 
-		void createRestirLVCTemporalDescriptors();
-		void createRestirLVCSpatialDescriptors();
-
-		void createRestirLVCTemporalDescriptorsCombined();
-		void createRestirLVCSpatialDescriptorsCombined();
+		void createRestirIRTemporalDescriptors();
+		void createRestirIRSpatialDescriptors();
 
 		void createRenderTargetSampler();
 
@@ -127,7 +119,6 @@ namespace vve {
 
 		DescriptorManager* commonDescriptors;
 		DescriptorManager* rtDescriptors;
-		DescriptorManager* BidirectionalDescriptors;
 		DescriptorManager* rtTargetsDescriptors;
 		DescriptorManager* combinePassDescriptors;
 		DescriptorManager* reprojectionPassDescriptors;
@@ -157,21 +148,6 @@ namespace vve {
 		RenderTarget* accumulatedLightingTarget;
 		PipelineFilter* combinePass;
 
-
-		//reduction piplines
-		PipelineFilter* importanceReductionPass;
-		PipelineFilter* keepProbReductionPass;
-
-		PipelineFilter* sumResetPass;
-
-		RenderTargetBufferDebug<glm::vec4>* importanceSum;
-		RenderTargetBufferDebug<glm::vec4>* keepProbSum;
-
-		DescriptorManager* reductionDescriptors;
-
-
-
-
 		RenderTarget* albedoTarget;
 		RenderTarget* normalTarget;
 		RenderTarget* specTarget;
@@ -184,13 +160,8 @@ namespace vve {
 		RenderTargetBuffer<ReservoirGI>* reservoirGI_A;
 		RenderTargetBuffer<ReservoirGI>* reservoirGI_B;
 
-		RenderTargetBuffer<ReservoirLVC>* reservoirLVC_A;
-		RenderTargetBuffer<ReservoirLVC>* reservoirLVC_B;
-
-
-
-		VkExtent2D lightVertexCacheSize;
-		RenderTargetBuffer<LightVertex>* lightVertexCache;
+		RenderTargetBuffer<ReservoirIR>* reservoirIR_A;
+		RenderTargetBuffer<ReservoirIR>* reservoirIR_B;
 
 		PiplineRaytraced* restir_temporal;
 		PiplineRaytraced* restir_spatial;
@@ -198,32 +169,14 @@ namespace vve {
 		PiplineRaytraced* restirGI_temporal;
 		PiplineRaytraced* restirGI_spatial;
 
-		PiplineRaytraced* restirLVC_temporal;
-		PiplineRaytraced* restirLVC_spatial;
-
-		PiplineRaytraced* restirLVC_temporal_combined;
-		PiplineRaytraced* restirLVC_spatial_combined;
-
-		PiplineRaytraced* lightVertexGenerationFull;
-		PiplineRaytraced* lightVertexGenerationRandomReplacment;
-		PiplineRaytraced* lightVertexGenerationWeightedReplacment;
-		PiplineRaytraced* bidirectionalPathTracing;
-
-		DescriptorManager* lightVertexGenerationDescriptors;
-		DescriptorManager* bidirectionalTargetDescriptors;
-
 		DescriptorManager* restir_temporal_descriptors;
 		DescriptorManager* restir_spatial_descriptors;
 
 		DescriptorManager* restirGI_temporal_descriptors;
 		DescriptorManager* restirGI_spatial_descriptors;
 
-		DescriptorManager* restirLVC_temporal_descriptors;
-		DescriptorManager* restirLVC_spatial_descriptors;
-
-		DescriptorManager* restirLVC_temporal_descriptors_combined;
-		DescriptorManager* restirLVC_spatial_descriptors_combined;
-
+		DescriptorManager* restirIR_temporal_descriptors;
+		DescriptorManager* restirIR_spatial_descriptors;
 
 		VkExtent2D vplCacheSize;
 		RenderTargetBuffer<VPL>* vplCache;

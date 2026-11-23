@@ -29,7 +29,6 @@ namespace vve {
         delete commonDescriptors;
         delete reprojectionPassDescriptors;
         delete rtDescriptors;
-        delete BidirectionalDescriptors;
         delete instantRadiosityDescriptors;
         delete mortonCodeDescriptors;
         delete pdfEstimationDescriptors;
@@ -48,20 +47,13 @@ namespace vve {
         raytracer->freeResources();
         InstantRadiosityTesting->freeResources();
         InstantRadiosityNaiveSampling->freeResources();
-        lightVertexGenerationFull->freeResources();
-        lightVertexGenerationRandomReplacment->freeResources();
         vplGenerationRandomReplacment->freeResources();
-        bidirectionalPathTracing->freeResources();
         combinePass->freeResources();
         reprojectionPass->freeResources();
         restir_temporal->freeResources();
         restir_spatial->freeResources();
         restirGI_temporal->freeResources();
         restirGI_spatial->freeResources();
-        restirLVC_temporal->freeResources();
-        restirLVC_spatial->freeResources();
-        restirLVC_temporal_combined->freeResources();
-        restirLVC_spatial_combined->freeResources();
         restir_IR_temporal->freeResources();
         restir_IR_spatial->freeResources();
 
@@ -97,10 +89,8 @@ namespace vve {
         delete reservoirGI_A;
         delete reservoirGI_B;
 
-        delete reservoirLVC_A;
-        delete reservoirLVC_B;
-
-        delete lightVertexCache;
+        delete reservoirIR_A;
+        delete reservoirIR_B;
 
         delete vplCache;
         delete vplCacheShading;
@@ -169,23 +159,6 @@ namespace vve {
         rtDescriptors->finalize();
     }
 
-    void RendererRayTraced::createBidirectionalDescriptors() {
-        BidirectionalDescriptors = new DescriptorManager(device);
-
-        BidirectionalDescriptors->addDescriptorInput(objectManager->getTlasDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
-        BidirectionalDescriptors->addDescriptorInput(objectManager->getVertexDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
-        BidirectionalDescriptors->addDescriptorInput(objectManager->getIndexDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
-        BidirectionalDescriptors->addDescriptorInput(objectManager->getInstanceDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
-        BidirectionalDescriptors->addDescriptorInput(lightManager->getLightDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
-
-        BidirectionalDescriptors->addDescriptorInput(lightVertexCache->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        PerFrameDescriptorPlacment* uniformBidirectionalBufferDescriptors = getBidirectionalUniformBufferDescriptorInput(6, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-        BidirectionalDescriptors->addDescriptorInput(uniformBidirectionalBufferDescriptors);
-
-        BidirectionalDescriptors->finalize();
-    }
-
     void RendererRayTraced::createInstantRadiosityDescriptors() {
         instantRadiosityDescriptors = new DescriptorManager(device);
 
@@ -219,31 +192,6 @@ namespace vve {
         rtTargetsDescriptors->update();
     }
 
-
-    void RendererRayTraced::createBidirectionalTargetsDescriptors() {
-        bidirectionalTargetDescriptors = new DescriptorManager(device);
-
-        bidirectionalTargetDescriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        bidirectionalTargetDescriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        bidirectionalTargetDescriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        bidirectionalTargetDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        bidirectionalTargetDescriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        bidirectionalTargetDescriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        bidirectionalTargetDescriptors->finalize();
-        bidirectionalTargetDescriptors->update();
-    }
-
-    void RendererRayTraced::createLightVertexGenerationDescriptors() {
-        lightVertexGenerationDescriptors = new DescriptorManager(device);
-
-        lightVertexGenerationDescriptors->addDescriptorInput(importanceSum->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        lightVertexGenerationDescriptors->addDescriptorInput(keepProbSum->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        lightVertexGenerationDescriptors->finalize();
-        lightVertexGenerationDescriptors->update();
-    }
-
     void RendererRayTraced::createVPLGenerationDescriptors() {
         vplGenerationDescriptors = new DescriptorManager(device);
 
@@ -262,21 +210,6 @@ namespace vve {
         vplGenerationDescriptors->finalize();
         vplGenerationDescriptors->update();
     }
-
-    void RendererRayTraced::createReductionDescriptors() {
-        reductionDescriptors = new DescriptorManager(device);
-
-        reductionDescriptors->addDescriptorInput(lightVertexCache->getDescriptorInput(0, VK_SHADER_STAGE_COMPUTE_BIT));
-        reductionDescriptors->addDescriptorInput(importanceSum->getDescriptorInput(1, VK_SHADER_STAGE_COMPUTE_BIT));
-        reductionDescriptors->addDescriptorInput(keepProbSum->getDescriptorInput(2, VK_SHADER_STAGE_COMPUTE_BIT));
-        PerFrameDescriptorPlacment* uniformBidirectionalBufferDescriptors = getBidirectionalUniformBufferDescriptorInput(3, VK_SHADER_STAGE_COMPUTE_BIT);
-        reductionDescriptors->addDescriptorInput(uniformBidirectionalBufferDescriptors);
-
-        reductionDescriptors->finalize();
-        reductionDescriptors->update();
-    }
-
-    
 
     void RendererRayTraced::createCombinePassDescriptors() {
         combinePassDescriptors = new DescriptorManager(device);
@@ -313,8 +246,8 @@ namespace vve {
         reprojectionPassDescriptors->addDescriptorInput(reservoirGI_A->getDescriptorInput(9, VK_SHADER_STAGE_COMPUTE_BIT));
         reprojectionPassDescriptors->addDescriptorInput(reservoirGI_B->getDescriptorInput(10, VK_SHADER_STAGE_COMPUTE_BIT));
 
-        reprojectionPassDescriptors->addDescriptorInput(reservoirLVC_A->getDescriptorInput(11, VK_SHADER_STAGE_COMPUTE_BIT));
-        reprojectionPassDescriptors->addDescriptorInput(reservoirLVC_B->getDescriptorInput(12, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirIR_A->getDescriptorInput(11, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirIR_B->getDescriptorInput(12, VK_SHADER_STAGE_COMPUTE_BIT));
 
 
         reprojectionPassDescriptors->finalize();
@@ -404,90 +337,54 @@ namespace vve {
         restirGI_spatial_descriptors->update();
     }
 
-    void RendererRayTraced::createRestirLVCTemporalDescriptors() {
+    void RendererRayTraced::createRestirIRTemporalDescriptors() {
         std::cout << "got function \n";
-        restirLVC_temporal_descriptors = new DescriptorManager(device);
+        restirIR_temporal_descriptors = new DescriptorManager(device);
 
-        restirLVC_temporal_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_temporal_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_temporal_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_temporal_descriptors->addDescriptorInput(reservoirLVC_B->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reservoirIR_B->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_temporal_descriptors->addDescriptorInput(reservoirLVC_A->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reservoirIR_A->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_temporal_descriptors->finalize();
-        restirLVC_temporal_descriptors->update();
+        restirIR_temporal_descriptors->finalize();
+        restirIR_temporal_descriptors->update();
     }
 
-    void RendererRayTraced::createRestirLVCSpatialDescriptors() {
-        restirLVC_spatial_descriptors = new DescriptorManager(device);
+    void RendererRayTraced::createRestirIRSpatialDescriptors() {
+        restirIR_spatial_descriptors = new DescriptorManager(device);
 
-        restirLVC_spatial_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_spatial_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_spatial_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_spatial_descriptors->addDescriptorInput(reservoirLVC_A->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(reservoirIR_A->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_spatial_descriptors->addDescriptorInput(reservoirLVC_B->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(reservoirIR_B->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_spatial_descriptors->addDescriptorInput(pixelUsage->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(pixelUsage->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirLVC_spatial_descriptors->addDescriptorInput(mutationPixelInedx->getDescriptorInput(11, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(mutationPixelInedx->getDescriptorInput(11, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         
 
-        restirLVC_spatial_descriptors->finalize();
-        restirLVC_spatial_descriptors->update();
-    }
-
-    void RendererRayTraced::createRestirLVCTemporalDescriptorsCombined() {
-        restirLVC_temporal_descriptors_combined = new DescriptorManager(device);
-
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(reservoirDI_B->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirLVC_temporal_descriptors_combined->addDescriptorInput(reservoirDI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirLVC_temporal_descriptors_combined->finalize();
-        restirLVC_temporal_descriptors_combined->update();
-    }
-
-    void RendererRayTraced::createRestirLVCSpatialDescriptorsCombined() {
-        restirLVC_spatial_descriptors_combined = new DescriptorManager(device);
-
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(reservoirDI_A->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirLVC_spatial_descriptors_combined->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirLVC_spatial_descriptors_combined->finalize();
-        restirLVC_spatial_descriptors_combined->update();
+        restirIR_spatial_descriptors->finalize();
+        restirIR_spatial_descriptors->update();
     }
 
     void RendererRayTraced::createRenderTargetSampler() {
@@ -656,7 +553,6 @@ namespace vve {
         //commandManager = new CommandManager(device, physicalDevice, surface, graphicsQueue);
         swapchain = new SwapChain(physicalDevice, device, surface, presentQueue, commandManager, m_windowSDLState().m_sdlWindow);
 
-        lightVertexCacheSize = VkExtent2D(50000, 1);
         vplCacheSize = VkExtent2D(50000, 1);
 
         //textureManager = new TextureManager(device, physicalDevice, commandManager);
@@ -725,10 +621,8 @@ namespace vve {
         reservoirGI_A = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirGI(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
         reservoirGI_B = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirGI(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
 
-        reservoirLVC_A = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirLVC(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
-        reservoirLVC_B = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirLVC(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-
-        lightVertexCache = new RenderTargetBuffer(lightVertexCacheSize.width, 1, LightVertex(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+        reservoirIR_A = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirIR(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
+        reservoirIR_B = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirIR(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
 
         vplCache = new RenderTargetBuffer(vplCacheSize.width, 1, VPL(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
         vplCacheShading = new RenderTargetBuffer(vplCacheSize.width, 1, VPLShading(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
@@ -820,57 +714,6 @@ namespace vve {
 
         raytracer->initRayTracingPipeline();
 
-
-        importanceSum = new RenderTargetBufferDebug(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
-        keepProbSum = new RenderTargetBufferDebug(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
-
-        createLightVertexGenerationDescriptors();
-        createBidirectionalDescriptors();
-
-
-        lightVertexGenerationFull = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_full.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
-        lightVertexGenerationFull->initRayTracingPipeline();
-
-        lightVertexGenerationRandomReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_random_replacment.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
-        lightVertexGenerationRandomReplacment->initRayTracingPipeline();
-
-
-        //weighted Replacment
-        createReductionDescriptors();
-
-        sumResetPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, VkExtent2D(1,1), VkExtent2D(1, 1), "shaders/PathTracing/sumReset.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        importanceReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/importanceReduction.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        keepProbReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/keepProbReduction.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
-
-
-        sumResetPass->initComputePipeline();
-        importanceReductionPass->initComputePipeline();
-        keepProbReductionPass->initComputePipeline();
-
-
-
-        lightVertexGenerationWeightedReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_weighted_replacment.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
-        lightVertexGenerationWeightedReplacment->initRayTracingPipeline();
-
-
-        createBidirectionalTargetsDescriptors();
-
-
-        bidirectionalPathTracing = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, bidirectionalTargetDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_bidirectional.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-
-
-        bidirectionalPathTracing->bindRenderTarget(albedoTarget);
-        bidirectionalPathTracing->bindRenderTarget(normalTarget);
-        bidirectionalPathTracing->bindRenderTarget(specTarget);
-        bidirectionalPathTracing->bindRenderTarget(positionTarget);
-        bidirectionalPathTracing->bindRenderTarget(shadingNormalTarget);
-
-        bidirectionalPathTracing->bindRenderTarget(RtTarget);
-
-        bidirectionalPathTracing->initRayTracingPipeline();
-
-
         createRestirTemporalDescriptors();
 
         //needs diffrent pipline barrier!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -948,83 +791,10 @@ namespace vve {
 
         std::cout << "created  restirGI spatial pipline \n";
 
-        //RestirLVC
+        //RestirIR
 
-        createRestirLVCTemporalDescriptors();
-        std::cout << "created  restirLVC temp Descriptor \n";
-
-        //needs diffrent pipline barrier!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        restirLVC_temporal = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, restirLVC_temporal_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restirLVC_temporal.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
-
-        restirLVC_temporal->bindRenderTarget(albedoTarget);
-        restirLVC_temporal->bindRenderTarget(normalTarget);
-        restirLVC_temporal->bindRenderTarget(specTarget);
-        restirLVC_temporal->bindRenderTarget(positionTarget);
-        restirLVC_temporal->bindRenderTarget(shadingNormalTarget);
-
-        restirLVC_temporal->bindRenderTarget(reprojectionErrorTarget);
-
-        restirLVC_temporal->bindRenderTarget(positionReprojectedTarget);
-
-
-        restirLVC_temporal->initRayTracingPipeline();
-
-        std::cout << "created  restirLVC temp pipline \n";
-
-
-        createRestirLVCSpatialDescriptors();
-
-        std::cout << "created  restirLVC spatial Descriptor \n";
-
-        restirLVC_spatial = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, restirLVC_spatial_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restirLVC_spatial.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-        restirLVC_spatial->bindRenderTarget(albedoTarget);
-        restirLVC_spatial->bindRenderTarget(normalTarget);
-        restirLVC_spatial->bindRenderTarget(specTarget);
-        restirLVC_spatial->bindRenderTarget(positionTarget);
-        restirLVC_spatial->bindRenderTarget(shadingNormalTarget);
-
-        restirLVC_spatial->bindRenderTarget(RtTarget);
-
-        restirLVC_spatial->initRayTracingPipeline();
-
-        std::cout << "created  restirLVC spatial pipline \n";
-
-
-        //RestirLVC_Combined
-
-        createRestirLVCTemporalDescriptorsCombined();
-
-        //needs diffrent pipline barrier!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        restirLVC_temporal_combined = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, restirLVC_temporal_descriptors_combined, swapchain->getExtent(), "shaders/PathTracing/raygen_restirLVC_temporal_combined.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
-
-        restirLVC_temporal_combined->bindRenderTarget(albedoTarget);
-        restirLVC_temporal_combined->bindRenderTarget(normalTarget);
-        restirLVC_temporal_combined->bindRenderTarget(specTarget);
-        restirLVC_temporal_combined->bindRenderTarget(positionTarget);
-        restirLVC_temporal_combined->bindRenderTarget(shadingNormalTarget);
-
-        restirLVC_temporal_combined->bindRenderTarget(reprojectionErrorTarget);
-
-        restirLVC_temporal_combined->bindRenderTarget(positionReprojectedTarget);
-
-
-        restirLVC_temporal_combined->initRayTracingPipeline();
-
-
-        createRestirLVCSpatialDescriptorsCombined();
-
-        restirLVC_spatial_combined = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, restirLVC_spatial_descriptors_combined, swapchain->getExtent(), "shaders/PathTracing/raygen_restirLVC_spatial_combined.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-        restirLVC_spatial_combined->bindRenderTarget(albedoTarget);
-        restirLVC_spatial_combined->bindRenderTarget(normalTarget);
-        restirLVC_spatial_combined->bindRenderTarget(specTarget);
-        restirLVC_spatial_combined->bindRenderTarget(positionTarget);
-        restirLVC_spatial_combined->bindRenderTarget(shadingNormalTarget);
-
-        restirLVC_spatial_combined->bindRenderTarget(RtTarget);
-
-        restirLVC_spatial_combined->initRayTracingPipeline();
+        createRestirIRTemporalDescriptors();
+        createRestirIRSpatialDescriptors();
 
 
         createReprojectPassDescriptors();
@@ -1065,8 +835,7 @@ namespace vve {
         
         vplGenerationRandomReplacment->initRayTracingPipeline();
 
-        // use descriptor set and targets from restirLVC
-        restir_IR_temporal = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, restirLVC_temporal_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_IR_temporal.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        restir_IR_temporal = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, restirIR_temporal_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_IR_temporal.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
         restir_IR_temporal->bindRenderTarget(albedoTarget);
         restir_IR_temporal->bindRenderTarget(normalTarget);
@@ -1083,7 +852,7 @@ namespace vve {
 
         std::cout << "vpl restir temporal created \n";
 
-        restir_IR_spatial = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, restirLVC_spatial_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_IR_spatial.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        restir_IR_spatial = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, restirIR_spatial_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_IR_spatial.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
         restir_IR_spatial->bindRenderTarget(albedoTarget);
         restir_IR_spatial->bindRenderTarget(normalTarget);
@@ -1295,41 +1064,30 @@ namespace vve {
         reservoirGI_A->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
         reservoirGI_B->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
 
-        reservoirLVC_A->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
-        reservoirLVC_B->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
+        reservoirIR_A->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
+        reservoirIR_B->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
 
         rasterizer->recreateFrameBuffers(swapchain->getExtent());
 
         rtTargetsDescriptors->update();
-        bidirectionalTargetDescriptors->update();
         combinePassDescriptors->update();
         reprojectionPassDescriptors->update();
         restir_temporal_descriptors->update(); 
         restir_spatial_descriptors->update();
         restirGI_temporal_descriptors->update();
         restirGI_spatial_descriptors->update();
-        restirLVC_temporal_descriptors->update();
-        restirLVC_spatial_descriptors->update();
-
-        restirLVC_temporal_descriptors_combined->update();
-        restirLVC_spatial_descriptors_combined->update();
+        restirIR_temporal_descriptors->update();
+        restirIR_spatial_descriptors->update();
 
         vplGenerationDescriptors->update();
 
         raytracer->setExtent(swapchain->getExtent());
         InstantRadiosityTesting->setExtent(swapchain->getExtent());
         InstantRadiosityNaiveSampling->setExtent(swapchain->getExtent());
-        bidirectionalPathTracing->setExtent(swapchain->getExtent());
         restir_temporal->setExtent(swapchain->getExtent());
         restir_spatial->setExtent(swapchain->getExtent());
         restirGI_temporal->setExtent(swapchain->getExtent());
         restirGI_spatial->setExtent(swapchain->getExtent());
-
-        restirLVC_temporal->setExtent(swapchain->getExtent());
-        restirLVC_spatial->setExtent(swapchain->getExtent());
-
-        restirLVC_temporal_combined->setExtent(swapchain->getExtent());
-        restirLVC_spatial_combined->setExtent(swapchain->getExtent());
 
         restir_IR_temporal->setExtent(swapchain->getExtent());
         restir_IR_spatial->setExtent(swapchain->getExtent());
@@ -1381,70 +1139,23 @@ namespace vve {
 
         switch (m_renderSettings().methode)
         {
-        case vvh::RenderMethode::BACKWARD:
+        case vvh::RenderMethode::PATHTRACING:
         {
             raytracer->recordCommandBuffer(currentFrame);
             break;
         }
-        case vvh::RenderMethode::FORWARD:
-        {
-            lightVertexGenerationFull->recordCommandBuffer(currentFrame);
-            bidirectionalPathTracing->recordCommandBuffer(currentFrame);
-            break;
-        }
+        /*
         case  vvh::RenderMethode::RESTIRGI:
         {
             restirGI_temporal->recordCommandBuffer(currentFrame);
             restirGI_spatial->recordCommandBuffer(currentFrame);
             break;
         }
-        case  vvh::RenderMethode::RESTIRDI:
+        */
+        case  vvh::RenderMethode::RESTIR:
         {
             restir_temporal->recordCommandBuffer(currentFrame);
             restir_spatial->recordCommandBuffer(currentFrame);
-            break;
-        }
-        case  vvh::RenderMethode::RESTIRLVC:
-        {
-            sumResetPass->recordCommandBuffer(currentFrame);
-
-            importanceReductionPass->recordCommandBuffer(currentFrame);
-
-            std::vector<glm::vec4> importanceSumCapture = importanceSum->getData(currentFrame);
-            std::cout << "The importance average is: " << importanceSumCapture[0].x / lightVertexCacheSize.width << "\n";
-
-            keepProbReductionPass->recordCommandBuffer(currentFrame);
-            std::vector<glm::vec4> keepSumCapture = keepProbSum->getData(currentFrame);
-            std::cout << "The keep average is: " << keepSumCapture[0].x / lightVertexCacheSize.width << "\n";
-
-            lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
-            
-            //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
-
-            restirLVC_temporal->recordCommandBuffer(currentFrame);
-            restirLVC_spatial->recordCommandBuffer(currentFrame);
-            break;
-        }
-        case  vvh::RenderMethode::RESTIRLVCCOMBINED:
-        {
-            
-            sumResetPass->recordCommandBuffer(currentFrame);
-
-            importanceReductionPass->recordCommandBuffer(currentFrame);
-
-            std::vector<glm::vec4> importanceSumCaptureCombined = importanceSum->getData(currentFrame);
-            std::cout << "The importance average is: " << importanceSumCaptureCombined[0].x / lightVertexCacheSize.width << "\n";
-
-            keepProbReductionPass->recordCommandBuffer(currentFrame);
-            std::vector<glm::vec4> keepSumCaptureCombined = keepProbSum->getData(currentFrame);
-            std::cout << "The keep average is: " << keepSumCaptureCombined[0].x / lightVertexCacheSize.width << "\n";
-            
-            lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
-            
-            //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
-
-            restirLVC_temporal_combined->recordCommandBuffer(currentFrame);
-            restirLVC_spatial_combined->recordCommandBuffer(currentFrame);
             break;
         }
         case  vvh::RenderMethode::RESTIRIR:
@@ -1574,9 +1285,7 @@ namespace vve {
 
         reservoirDI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirDI_B->getBuffer(currentFrame), currentFrame);
         reservoirGI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirGI_B->getBuffer(currentFrame), currentFrame);
-        reservoirLVC_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirLVC_B->getBuffer(currentFrame), currentFrame);
-
-        lightVertexCache->getBuffer(nextFrame)->recordCopyFromBuffer(lightVertexCache->getBuffer(currentFrame), currentFrame);
+        reservoirIR_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirIR_B->getBuffer(currentFrame), currentFrame);
 
         vplCache->getBuffer(nextFrame)->recordCopyFromBuffer(vplCache->getBuffer(currentFrame), currentFrame);
         vplCacheShading->getBuffer(nextFrame)->recordCopyFromBuffer(vplCacheShading->getBuffer(currentFrame), currentFrame);
@@ -1647,18 +1356,13 @@ namespace vve {
 
         uniformBuffer_c[currentImage]->updateBuffer(&ubo, 1);
 
-
-        BidirectionalUniforms uboBDPT{};
         InstantRadiosityUniforms uboIR{};
-
-        uboBDPT.LVCSize = lightVertexCacheSize.width;
 
         uboIR.LVCSize = vplCacheSize.width;
         //hardcoded for now!
         uboIR.min = glm::vec3(-16.0, -10.0, -2.0);
         uboIR.max = glm::vec3(16.0, 10.0, 12.0);
 
-        bidirectionalUniformsBuffer[currentImage]->updateBuffer(&uboBDPT, 1);
         instantRadiosityUniformsBuffer[currentImage]->updateBuffer(&uboIR, 1);
 
     }
@@ -1672,7 +1376,6 @@ namespace vve {
         }
         if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {
             rtDescriptors->destroyDescriptorSets();
-            BidirectionalDescriptors->destroyDescriptorSets();
             instantRadiosityDescriptors->destroyDescriptorSets();
             mortonCodeDescriptors->destroyDescriptorSets();
             pdfEstimationDescriptors->destroyDescriptorSets();
@@ -1689,7 +1392,6 @@ namespace vve {
         }
         if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {
             rtDescriptors->update();
-            BidirectionalDescriptors->update();
             instantRadiosityDescriptors->update();
             mortonCodeDescriptors->update();
             pdfEstimationDescriptors->update();
