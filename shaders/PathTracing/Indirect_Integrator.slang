@@ -16,7 +16,7 @@ float3 groundTruthLightRadiance(in uint lightIndex, in IntersectionRecord its, i
 
     if (occluded) {
         return 0.0;
-    }
+    }    
 
     return getUnoccludedLightContribution(its, material, record);
 }
@@ -26,6 +26,7 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     its.position = inPosition[int2(launchID)].xyz;
     its.normal = inNormal[int2(launchID)].xyz;
+    its.trueNormal = inTrueNormal[int2(launchID)].xyz;
     its.frame = Frame(its.normal);
     its.direction = cameraRay.Direction;
 
@@ -40,9 +41,15 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
+    //only invert the true normal!!!!
+    /*
     if (dot(its.normal, its.direction) > 0.0) {
         its.normal *= -1.0;
         shadingNormal *= -1.0;
+    }
+        */
+    if (dot(its.trueNormal, its.direction) > 0.0) {
+        its.trueNormal *= -1.0;
     }
 
     material.shadingFrame = Frame(shadingNormal);
@@ -95,6 +102,9 @@ IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
         BSDFQueryRecord record = constructBSDFRecord(its, materialRecord, false);
         float3 throughput = samplePrincipled(record, materialRecord, sampler);
         // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
+
+        //radiance += throughput;
+        
         RayDesc indirectRay = getRayOffset(its, record.woWorld);
 
         HitPayload payload;
@@ -140,15 +150,18 @@ RWTexture2D<float4> inAlbedoAlpha;
 RWTexture2D<float4> inNormal;
 
 [[vk::binding(2, 2)]]
-RWTexture2D<float4> inSpec;
+RWTexture2D<float4> inTrueNormal;
 
 [[vk::binding(3, 2)]]
-RWTexture2D<float4> inPosition;
+RWTexture2D<float4> inSpec;
 
 [[vk::binding(4, 2)]]
-RWTexture2D<float4> inShadingNormal;
+RWTexture2D<float4> inPosition;
 
 [[vk::binding(5, 2)]]
+RWTexture2D<float4> inShadingNormal;
+
+[[vk::binding(6, 2)]]
 RWTexture2D<float4> outImage;
 
 
@@ -195,7 +208,7 @@ void rgenMain()
         //maybe splitting between specular and diffuse also works. In that case the diffuse would still have to be devided,
         //by albedo. But indirect has less tendency to be large when albedo is small because indirect is already weighted with throughput 
         //not sure about the math it might actually be garanteed to not be large.
-        float3 lighting = outputColor / max(albedo,0.001);
+        float3 lighting = outputColor / max(albedo, 0.001);
         outImage[int2(launchID)] = float4(lighting, 1.0);    
     }
 }

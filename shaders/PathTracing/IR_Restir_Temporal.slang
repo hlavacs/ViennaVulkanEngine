@@ -7,8 +7,6 @@ import BSDF;
 import ColorSpace;
 import Surface;
 import raytracing;
-import Reservoir;
-import RestirDI;
 import IR_Reservoir;
 import IR_Restir;
 import IR_Defines;
@@ -22,27 +20,24 @@ RWTexture2D<float4> inAlbedoAlpha;
 RWTexture2D<float4> inNormal;
 
 [[vk::binding(2, 2)]]
-RWTexture2D<float4> inSpec;
+RWTexture2D<float4> inTrueNormal;
 
 [[vk::binding(3, 2)]]
-RWTexture2D<float4> inPosition;
+RWTexture2D<float4> inSpec;
 
 [[vk::binding(4, 2)]]
-RWTexture2D<float4> inShadingNormal;
+RWTexture2D<float4> inPosition;
 
 [[vk::binding(5, 2)]]
-RWTexture2D<float4> inReprojectionError;
+RWTexture2D<float4> inShadingNormal;
 
 [[vk::binding(6, 2)]]
-RWStructuredBuffer<Reservoir> inReservoir;
+RWTexture2D<float4> inReprojectionError;
 
 [[vk::binding(7, 2)]]
-RWStructuredBuffer<Reservoir> outReservoir;
-
-[[vk::binding(8, 2)]]
 RWStructuredBuffer<ReservoirVPL> inReservoirVPL;
 
-[[vk::binding(9, 2)]]
+[[vk::binding(8, 2)]]
 RWStructuredBuffer<ReservoirVPL> outReservoirVPL;
 
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
@@ -52,8 +47,8 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
     its.normal = inNormal[int2(launchID)].xyz;
     its.frame = Frame(its.normal);
     its.direction = cameraRay.Direction;
+    its.trueNormal = inTrueNormal[int2(launchID)].xyz;
 
-    
     material.albedo = inAlbedoAlpha[launchID].xyz;
     material.alpha = inAlbedoAlpha[launchID].w;
     // Incorrect but not needed
@@ -64,12 +59,9 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
-    
-    if (dot(its.normal, its.direction) > 0.0) {
-        its.normal *= -1.0;
-        shadingNormal *= -1.0;
+    if (dot(its.trueNormal, its.direction) > 0.0) {
+        its.trueNormal *= -1.0;
     }
-        
 
     material.shadingFrame = Frame(shadingNormal);
 }
@@ -87,16 +79,11 @@ void rgenMain()
     
     float3 position = inPosition[int2(launchID)].xyz;
 
-    const uint CANDIDATE_COUNT = 32;
-    const uint MAX_TEMPORAL_INFLUENCE = 20;
-
     const uint CANDIDATE_COUNT_GI = 32;
     const uint MAX_TEMPORAL_INFLUENCE_GI = 20;
 
     if (isSkyPixel(position)) {
-        Reservoir reservoir = createEmptyReservoir();
         ReservoirVPL reservoirLVC = createEmptyReservoirVPL();
-        storeReservoir(reservoir, launchID, launchSize, outReservoir);
         storeReservoirVPL(reservoirLVC, launchID, launchSize, outReservoirVPL);
     } else {
         uint linear = (uint)launchID.x + (uint)launchID.y * (uint)launchSize.x;
@@ -111,43 +98,6 @@ void rgenMain()
         IntersectionRecord its;
 
         getInitialSurfaceData(launchID, launchSize, its, material);
-
-        Reservoir reservoir = createEmptyReservoir();
-
-        // initial selection of 1 light of M
-        for (uint i = 0; i < CANDIDATE_COUNT; i++)
-        {
-            uint lightIndex = sampler.UniformUIntFast(0, lightCount - 1);
-
-            float4 samplePosition = float4(0.0);
-
-            p_hat = sampleUnoccludedLightRadiance(lightIndex, its, material, sampler, samplePosition);
-
-            float w = p_hat / lightPdf;
-
-            UpdateReservoir(reservoir, lightIndex, samplePosition, w, 1, sampler);
-        }
-
-        if (IsReservoirValid(reservoir))
-        {
-            // Update weight with new radiance with visibility term!
-            float p_hat = length(revaluateOccludedLightRadiance(reservoir, its, material));
-            reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
-        } else {
-            reservoir = createEmptyReservoir();
-        }
-
-        //reject history if reprojection error is too big
-        //better system needed in the future
-        if (inReprojectionError[launchID].x < 0.5) {
-            Reservoir temporalReservoir = readReservoir(launchID, launchSize, inReservoir);
-
-            // restrict influence from past samples.
-            // this may not be optimal, the real time raytracing engine handles this diffrently
-            temporalReservoir.M = min(MAX_TEMPORAL_INFLUENCE * reservoir.M, temporalReservoir.M);
-
-            reservoir = CombineReservoirs(reservoir, temporalReservoir, its, material, sampler);
-        }
 
         //GI
         ReservoirVPL reservoirVPL = createEmptyReservoirVPL();
@@ -236,7 +186,6 @@ void rgenMain()
             }   
         }
 
-        storeReservoir(reservoir, launchID, launchSize, outReservoir);
         storeReservoirVPL(reservoirVPL, launchID, launchSize, outReservoirVPL);
     }
 }

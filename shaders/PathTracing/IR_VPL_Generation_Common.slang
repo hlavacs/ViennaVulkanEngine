@@ -110,9 +110,9 @@ float3 getUnoccludedLightContributionDiffuse(in VPLReconnectionInfo vpl, in VPLS
     // diffuse shader only, without expansive call to full bsdf pipline!
     float cosine = saturate(dot(emitterRecord.direction, vpl.normal.xyz));
 
-    //float3 diffuseEval = shadingInfo.albedo / M_PI * cosine;
-    //for testing purposes albedo is set to 0.5 
-    float3 diffuseEval = float3(0.5) / M_PI * cosine;
+    // float3 diffuseEval = shadingInfo.albedo / M_PI * cosine;
+    // for testing purposes albedo is set to 0.5
+    float3 diffuseEval = shadingInfo.albedo / M_PI * cosine;
 
     float3 radiance = emitterRecord.sampleEmission * diffuseEval;
 

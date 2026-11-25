@@ -150,6 +150,7 @@ namespace vve {
 
 		RenderTarget* albedoTarget;
 		RenderTarget* normalTarget;
+		RenderTarget* trueNormalTarget;
 		RenderTarget* specTarget;
 		RenderTarget* positionTarget;
 		RenderTarget* shadingNormalTarget;

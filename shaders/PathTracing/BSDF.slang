@@ -7,7 +7,8 @@ import Frame;
 
 public struct BSDFQueryRecord {
     // Input: geometric normal in world space.
-    public float3 geometryNormal; 
+    public float3 geometryNormal;
+    
 
     // Input: incident/outgoing directions in world space.
     public float3 wiWorld;
@@ -41,13 +42,20 @@ float convertIORLevel(float iorLevel) {
     return 1.0 + iorLevel;
 }
 
-/*
+
 public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, in bool isShadowQuery) {
     // Inputs: intersection, material, shadow flag. Output: initialized query record.
     BSDFQueryRecord record;
     record.wiShading = material.shadingFrame.toLocal(-its.direction);
+
+    // this is likely to be biased, but it is a simple fix to higly incorrect shading
+    if (record.wiShading.z <= 0.0) {
+        record.wiShading.z = 0.01;
+        record.wiShading = normalize(record.wiShading);
+    }
+
     record.wiWorld = -its.direction;
-    record.geometryNormal = its.normal;
+    record.geometryNormal = its.trueNormal;
     record.wmSet = false;
     record.isShadowQuery = isShadowQuery;
     return record;
@@ -59,38 +67,47 @@ public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in Materia
     record.wiShading = material.shadingFrame.toLocal(-its.direction);
     record.wiWorld = -its.direction;
     record.woShading = material.shadingFrame.toLocal(outDirection);
+
+    //this is likely to be biased, but it is a simple fix to higly incorrect shading
+    if (record.wiShading.z <= 0.0) {
+        record.wiShading.z = 0.01;
+        record.wiShading = normalize(record.wiShading);
+    }
+
     record.woWorld = outDirection;
-    record.geometryNormal = its.normal;
+    record.geometryNormal = its.trueNormal;
     record.wmSet = false;
     record.isShadowQuery = isShadowQuery;
     return record;
 }
 
-*/
-
+/*
 public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, in bool isShadowQuery) {
-    // Inputs: intersection, material, shadow flag. Output: initialized query record.
-    BSDFQueryRecord record;
-    record.wiShading = its.frame.toLocal(-its.direction);
-    record.wiWorld = -its.direction;
-    record.geometryNormal = its.normal;
-    record.wmSet = false;
-    record.isShadowQuery = isShadowQuery;
-    return record;
+// Inputs: intersection, material, shadow flag. Output: initialized query record.
+BSDFQueryRecord record;
+record.wiShading = its.frame.toLocal(-its.direction);
+record.wiWorld = -its.direction;
+record.geometryNormal = its.trueNormal;
+record.smoothNormal = its.normal;
+record.wmSet = false;
+record.isShadowQuery = isShadowQuery;
+return record;
 }
 
 public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, float3 outDirection, in bool isShadowQuery) {
-    // Inputs: intersection, material, outgoing world direction, shadow flag. Output: initialized query record.
-    BSDFQueryRecord record;
-    record.wiShading = its.frame.toLocal(-its.direction);
-    record.wiWorld = -its.direction;
-    record.woShading = its.frame.toLocal(outDirection);
-    record.woWorld = outDirection;
-    record.geometryNormal = its.normal;
-    record.wmSet = false;
-    record.isShadowQuery = isShadowQuery;
-    return record;
+// Inputs: intersection, material, outgoing world direction, shadow flag. Output: initialized query record.
+BSDFQueryRecord record;
+record.wiShading = its.frame.toLocal(-its.direction);
+record.wiWorld = -its.direction;
+record.woShading = its.frame.toLocal(outDirection);
+record.woWorld = outDirection;
+record.geometryNormal = its.trueNormal;
+record.smoothNormal = its.normal;
+record.wmSet = false;
+record.isShadowQuery = isShadowQuery;
+return record;
 }
+*/
 
 float fresnel(in float cosTheta_i, in float eta) {
     // Inputs: cos(theta_i), relative IOR. Output: Fresnel reflectance.
@@ -116,6 +133,7 @@ public float3 glossyEval(in BSDFQueryRecord record, in MaterialRecord material, 
         color = float3(1.0, 1.0, 1.0);
     }
 
+    
     if (material.roughness < 0.01) {
         if (record.isShadowQuery) {
             return float3(0.0, 0.0, 0.0);
@@ -123,10 +141,13 @@ public float3 glossyEval(in BSDFQueryRecord record, in MaterialRecord material, 
         return color; 
     }
 
+    
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return float3(0);
     float cosWoG = dot(record.geometryNormal, record.woWorld);
     if (cosWoG <= 0) return float3(0);
+    
+    
 
     // actully eta = m_intIOR / m_extIOR, but m_extIOR simplified to 1.0 for now
 
@@ -143,12 +164,16 @@ public float3 glossyEval(in BSDFQueryRecord record, in MaterialRecord material, 
 
     //return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
 
-    if (record.wiShading.z * record.woShading.z > 0.01) {
+    return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
+
+    /*
+    
+    if (abs(record.wiShading.z * record.woShading.z) > 0.01) {
         return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
     } else {
         return float3(0.0);
     }
-    
+    */
 
     //return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) * (1.0 - F) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
 }
@@ -160,18 +185,22 @@ public float glossyPdf(in BSDFQueryRecord record, in MaterialRecord material) {
         return 0.0f;
     }
 
+    //float3 wiShadingSafe = float3(record.wiShading.x, record.wiShading.y, max(0.01, record.wiShading.z));
+
     if (!record.wmSet) {
         record.wm = record.woShading + record.wiShading;
         record.wm = normalize(record.wm);
     }
 
+    /*
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;
     float cosWoG = dot(record.geometryNormal, record.woWorld);
     if (cosWoG <= 0) return 0.0;
+    */
 
     float alpha = pow(material.roughness, 2.0);
-    return squareToGGXPDF(record.woShading, record.wm, alpha) / (4 * abs(dot(record.woShading, record.wm)));
+    return squareToGGXPDF(record.wiShading, record.wm, alpha) / (4 * abs(dot(record.woShading, record.wm)));
 }
 
 public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord material, bool isMetal, in float2 sample) {
@@ -204,6 +233,8 @@ public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord mater
     float3 MicrofacetWo = float3(-MicrofacetWi.x, -MicrofacetWi.y, MicrofacetWi.z);
     record.woShading = microfacetFrame.toWorld(MicrofacetWo);
     record.woWorld = material.shadingFrame.toWorld(record.woShading);
+
+    float cosWoG = dot(record.woWorld, record.geometryNormal);
 
     // handle low roughness
     //record.measure = ESolidAngle;
@@ -243,10 +274,12 @@ public float3 DiffuseEval(in BSDFQueryRecord record, in MaterialRecord material)
 public float DiffusePdf(in BSDFQueryRecord record, in MaterialRecord material) {
     // Inputs: BSDF record, material. Output: PDF of cosine hemisphere sampling.
 
+    /*
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;
     float cosWoG = dot(record.geometryNormal, record.woWorld);
     if (cosWoG <= 0) return 0.0;
+    */
 
     return squareToCosineHemispherePdf(record.woShading);
 }
@@ -273,7 +306,6 @@ public float3 sampleDiffuse(inout BSDFQueryRecord record, in MaterialRecord mate
     return DiffuseEval(record, material) / pdf;
 }
 
-/*
 
 public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord material) {
     // Inputs: BSDF record, material. Output: combined principled BSDF value (RGB).
@@ -395,8 +427,8 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
     //return PrincipledEval(record, material) / PrincipledPdf(record, material) / pdf;
 }
 
-*/
 
+/*
 public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord material) {
 
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
@@ -407,6 +439,8 @@ public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord materi
     return float3(0.5) / M_PI * record.woShading.z;
     // return material.albedo / M_PI * cosineTerm;
 }
+
+*/
 
 public float3 PrincipledEvalNoCosine(in BSDFQueryRecord record, in MaterialRecord material) {
 
@@ -419,11 +453,10 @@ public float3 PrincipledEvalNoCosine(in BSDFQueryRecord record, in MaterialRecor
     // return material.albedo / M_PI * cosineTerm;
 }
 
+/*
 public float PrincipledPdf(in BSDFQueryRecord record, in MaterialRecord material) {
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;
-    float cosWoG = dot(record.geometryNormal, record.woWorld);
-    if (cosWoG <= 0) return 0.0;
 
     return squareToCosineHemispherePdf(record.woShading);
 }
@@ -432,7 +465,7 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return float3(0.0,0.0,0.0);
 
-    Frame geoFrame = Frame(record.geometryNormal);
+    Frame geoFrame = Frame(record.smoothNormal);
 
     float2 sample = sampler.UniformFloat2();
     record.woShading = squareToCosineHemisphere(sample);
@@ -450,3 +483,21 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
     return PrincipledEval(record, material) / pdf;
 }
 
+*/
+
+/*
+public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord material) {
+    return glossyEval(record, material, false);
+}
+
+public float PrincipledPdf(in BSDFQueryRecord record, in MaterialRecord material) {
+    return glossyPdf(record, material);
+}
+
+public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord material, inout Sampler sampler) {
+    // Inputs: BSDF record (inout), material, RNG sampler (inout).
+    // Output: weighted BSDF value for the sampled direction.
+    float2 sample = sampler.UniformFloat2();
+    return sampleGlossy(record, material,false, sample);
+}
+    */

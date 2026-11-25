@@ -183,10 +183,11 @@ namespace vve {
 
         rtTargetsDescriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         rtTargetsDescriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        rtTargetsDescriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        rtTargetsDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        rtTargetsDescriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        rtTargetsDescriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        rtTargetsDescriptors->addDescriptorInput(trueNormalTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        rtTargetsDescriptors->addDescriptorInput(specTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        rtTargetsDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        rtTargetsDescriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        rtTargetsDescriptors->addDescriptorInput(RtTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
         rtTargetsDescriptors->finalize();
         rtTargetsDescriptors->update();
@@ -259,14 +260,15 @@ namespace vve {
 
         restir_temporal_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         restir_temporal_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(trueNormalTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restir_temporal_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restir_temporal_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
         restir_temporal_descriptors->finalize();
         restir_temporal_descriptors->update();
@@ -277,14 +279,15 @@ namespace vve {
 
         restir_spatial_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         restir_spatial_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restir_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(trueNormalTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restir_spatial_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restir_spatial_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
         restir_spatial_descriptors->finalize();
         restir_spatial_descriptors->update();
@@ -296,20 +299,17 @@ namespace vve {
 
         restirGI_temporal_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         restirGI_temporal_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(trueNormalTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirGI_temporal_descriptors->addDescriptorInput(positionReprojectedTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(positionReprojectedTarget->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirGI_temporal_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(reservoirGI_B->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirGI_temporal_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirGI_temporal_descriptors->addDescriptorInput(reservoirGI_B->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirGI_temporal_descriptors->addDescriptorInput(reservoirGI_A->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_temporal_descriptors->addDescriptorInput(reservoirGI_A->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
         restirGI_temporal_descriptors->finalize();
         restirGI_temporal_descriptors->update();
@@ -320,18 +320,15 @@ namespace vve {
 
         restirGI_spatial_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         restirGI_spatial_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirGI_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_spatial_descriptors->addDescriptorInput(trueNormalTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirGI_spatial_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_spatial_descriptors->addDescriptorInput(reservoirGI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirGI_spatial_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirGI_spatial_descriptors->addDescriptorInput(reservoirGI_A->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirGI_spatial_descriptors->addDescriptorInput(reservoirGI_B->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirGI_spatial_descriptors->addDescriptorInput(reservoirGI_B->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
         restirGI_spatial_descriptors->finalize();
         restirGI_spatial_descriptors->update();
@@ -343,18 +340,15 @@ namespace vve {
 
         restirIR_temporal_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         restirIR_temporal_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(trueNormalTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirIR_temporal_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reservoirIR_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirIR_temporal_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirIR_temporal_descriptors->addDescriptorInput(reservoirIR_B->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirIR_temporal_descriptors->addDescriptorInput(reservoirIR_A->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_temporal_descriptors->addDescriptorInput(reservoirIR_A->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
         restirIR_temporal_descriptors->finalize();
         restirIR_temporal_descriptors->update();
@@ -365,22 +359,19 @@ namespace vve {
 
         restirIR_spatial_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         restirIR_spatial_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-        restirIR_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(trueNormalTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirIR_spatial_descriptors->addDescriptorInput(reservoirDI_A->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(reservoirIR_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirIR_spatial_descriptors->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(reservoirIR_B->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirIR_spatial_descriptors->addDescriptorInput(reservoirIR_A->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(pixelUsage->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        restirIR_spatial_descriptors->addDescriptorInput(reservoirIR_B->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirIR_spatial_descriptors->addDescriptorInput(pixelUsage->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-
-        restirIR_spatial_descriptors->addDescriptorInput(mutationPixelInedx->getDescriptorInput(11, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirIR_spatial_descriptors->addDescriptorInput(mutationPixelInedx->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         
 
         restirIR_spatial_descriptors->finalize();
@@ -601,6 +592,7 @@ namespace vve {
 
         albedoTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         normalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        trueNormalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         specTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         positionTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{{-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0}});
         shadingNormalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
@@ -681,6 +673,7 @@ namespace vve {
 
         rasterizer->bindRenderTarget(albedoTarget);
         rasterizer->bindRenderTarget(normalTarget);
+        rasterizer->bindRenderTarget(trueNormalTarget);
         rasterizer->bindRenderTarget(specTarget);
         rasterizer->bindRenderTarget(positionTarget);
         rasterizer->bindRenderTarget(shadingNormalTarget);
@@ -690,6 +683,7 @@ namespace vve {
 
         rayTracingTargets.push_back(albedoTarget);
         rayTracingTargets.push_back(normalTarget);
+        rayTracingTargets.push_back(trueNormalTarget);
         rayTracingTargets.push_back(specTarget);
         rayTracingTargets.push_back(positionTarget);
         rayTracingTargets.push_back(shadingNormalTarget);
@@ -706,6 +700,7 @@ namespace vve {
 
         raytracer->bindRenderTarget(albedoTarget);
         raytracer->bindRenderTarget(normalTarget);
+        raytracer->bindRenderTarget(trueNormalTarget);
         raytracer->bindRenderTarget(specTarget);
         raytracer->bindRenderTarget(positionTarget);
         raytracer->bindRenderTarget(shadingNormalTarget);
@@ -721,6 +716,7 @@ namespace vve {
 
         restir_temporal->bindRenderTarget(albedoTarget);
         restir_temporal->bindRenderTarget(normalTarget);
+        restir_temporal->bindRenderTarget(trueNormalTarget);
         restir_temporal->bindRenderTarget(specTarget);
         restir_temporal->bindRenderTarget(positionTarget);
         restir_temporal->bindRenderTarget(shadingNormalTarget);
@@ -740,6 +736,7 @@ namespace vve {
 
         restir_spatial->bindRenderTarget(albedoTarget);
         restir_spatial->bindRenderTarget(normalTarget);
+        restir_spatial->bindRenderTarget(trueNormalTarget);
         restir_spatial->bindRenderTarget(specTarget);
         restir_spatial->bindRenderTarget(positionTarget);
         restir_spatial->bindRenderTarget(shadingNormalTarget);
@@ -759,6 +756,7 @@ namespace vve {
 
         restirGI_temporal->bindRenderTarget(albedoTarget);
         restirGI_temporal->bindRenderTarget(normalTarget);
+        restirGI_temporal->bindRenderTarget(trueNormalTarget);
         restirGI_temporal->bindRenderTarget(specTarget);
         restirGI_temporal->bindRenderTarget(positionTarget);
         restirGI_temporal->bindRenderTarget(shadingNormalTarget);
@@ -781,6 +779,7 @@ namespace vve {
 
         restirGI_spatial->bindRenderTarget(albedoTarget);
         restirGI_spatial->bindRenderTarget(normalTarget);
+        restirGI_spatial->bindRenderTarget(trueNormalTarget);
         restirGI_spatial->bindRenderTarget(specTarget);
         restirGI_spatial->bindRenderTarget(positionTarget);
         restirGI_spatial->bindRenderTarget(shadingNormalTarget);
@@ -839,6 +838,7 @@ namespace vve {
 
         restir_IR_temporal->bindRenderTarget(albedoTarget);
         restir_IR_temporal->bindRenderTarget(normalTarget);
+        restir_IR_temporal->bindRenderTarget(trueNormalTarget);
         restir_IR_temporal->bindRenderTarget(specTarget);
         restir_IR_temporal->bindRenderTarget(positionTarget);
         restir_IR_temporal->bindRenderTarget(shadingNormalTarget);
@@ -856,6 +856,7 @@ namespace vve {
 
         restir_IR_spatial->bindRenderTarget(albedoTarget);
         restir_IR_spatial->bindRenderTarget(normalTarget);
+        restir_IR_spatial->bindRenderTarget(trueNormalTarget);
         restir_IR_spatial->bindRenderTarget(specTarget);
         restir_IR_spatial->bindRenderTarget(positionTarget);
         restir_IR_spatial->bindRenderTarget(shadingNormalTarget);
@@ -1154,9 +1155,14 @@ namespace vve {
         */
         case  vvh::RenderMethode::RESTIR:
         {
+            restirGI_temporal->recordCommandBuffer(currentFrame);
+            restirGI_spatial->recordCommandBuffer(currentFrame);
+            break;
+            /*
             restir_temporal->recordCommandBuffer(currentFrame);
             restir_spatial->recordCommandBuffer(currentFrame);
             break;
+            */
         }
         case  vvh::RenderMethode::RESTIRIR:
         {

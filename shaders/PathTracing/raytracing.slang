@@ -131,9 +131,16 @@ IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray) {
     its.tangent = normalize(mul(instance.modelInverse, float4(localTangent, 0)).xyz);
     its.materialIdx = instance.materialIndex;
 
+    its.trueNormal = normalize(cross(v1.position.xyz - v0.position.xyz,v2.position.xyz - v0.position.xyz));
+
     // incomming direction should be in the lower hemisphere.
+    /*
     if (dot(its.normal, its.direction) > 0.0) {
         its.normal *= -1.0;
+    }
+        */
+    if (dot(its.trueNormal, its.direction) > 0.0) {
+        its.trueNormal *= -1.0;
     }
 
     its.frame = Frame(its.normal, its.tangent);
@@ -195,7 +202,7 @@ RayDesc getRayOffset(in IntersectionRecord its, float3 castDirection) {
     // Inputs: intersection and cast direction. Output: ray offset based on side.
     RayDesc ray;
     // ray.Origin = its.position + (its.normal * 0.001);
-    ray.Origin = offset_ray(its.position, its.normal);
+    ray.Origin = offset_ray(its.position, its.trueNormal);
 
     ray.Direction = normalize(castDirection);
     ray.TMin = 0.0;      // Minimum distance to avoid self-intersection
@@ -233,7 +240,7 @@ bool isLightOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
     const uint rayFlags = 0;
 
     // self blocked
-    if (dot(shadowRay.Direction, its.normal) < 0.0) {
+    if (dot(shadowRay.Direction, its.trueNormal) < 0.0) {
         return true;
     }
 
@@ -286,7 +293,6 @@ float3 getUnoccludedLightContribution(in IntersectionRecord its, in MaterialReco
     }
 
     // bsdf can return negativ values !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //fix this
     return max(0.0, radiance);
 }
 

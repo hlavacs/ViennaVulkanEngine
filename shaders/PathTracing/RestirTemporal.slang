@@ -17,21 +17,24 @@ RWTexture2D<float4> inAlbedoAlpha;
 RWTexture2D<float4> inNormal;
 
 [[vk::binding(2, 2)]]
-RWTexture2D<float4> inSpec;
+RWTexture2D<float4> inTrueNormal;
 
 [[vk::binding(3, 2)]]
-RWTexture2D<float4> inPosition;
+RWTexture2D<float4> inSpec;
 
 [[vk::binding(4, 2)]]
-RWTexture2D<float4> inShadingNormal;
+RWTexture2D<float4> inPosition;
 
 [[vk::binding(5, 2)]]
-RWTexture2D<float4> inReprojectionError;
+RWTexture2D<float4> inShadingNormal;
 
 [[vk::binding(6, 2)]]
-RWStructuredBuffer<Reservoir> inReservoir;
+RWTexture2D<float4> inReprojectionError;
 
 [[vk::binding(7, 2)]]
+RWStructuredBuffer<Reservoir> inReservoir;
+
+[[vk::binding(8, 2)]]
 RWStructuredBuffer<Reservoir> outReservoir;
 
 
@@ -42,6 +45,7 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
     its.normal = inNormal[int2(launchID)].xyz;
     its.frame = Frame(its.normal);
     its.direction = cameraRay.Direction;
+    its.trueNormal = inTrueNormal[int2(launchID)].xyz;
 
     
     material.albedo = inAlbedoAlpha[launchID].xyz;
@@ -54,9 +58,8 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
-    if (dot(its.normal, its.direction) > 0.0) {
-        its.normal *= -1.0;
-        shadingNormal *= -1.0;
+    if (dot(its.trueNormal, its.direction) > 0.0) {
+        its.trueNormal *= -1.0;
     }
 
     material.shadingFrame = Frame(shadingNormal);

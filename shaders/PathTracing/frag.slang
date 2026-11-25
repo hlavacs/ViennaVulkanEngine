@@ -21,10 +21,11 @@ struct FSOutput
 {
     // Outputs: G-buffer targets.
     float4 outAlbedoAlpha : SV_Target0;
-    float3 outNormal      : SV_Target1;
-    float3 outSpec        : SV_Target2;
-    float3 outPosition    : SV_Target3;
-    float3 outShadingNormal : SV_Target4;
+    float3 outNormal : SV_Target1;
+    float3 outTrueNormal : SV_Target2;
+    float3 outSpec        : SV_Target3;
+    float3 outPosition    : SV_Target4;
+    float3 outShadingNormal : SV_Target5;
 };
 
 
@@ -46,6 +47,11 @@ FSOutput main(FSInput input)
     o.outShadingNormal = material.shadingFrame.n;
     o.outSpec = float3(material.roughness, material.metalness, material.ior);
     o.outPosition = input.fragPosition;
+
+    float3 dpdx = ddx(input.fragPosition);
+    float3 dpdy = ddy(input.fragPosition);
+
+    o.outTrueNormal = -normalize(cross(dpdx, dpdy));
 
     return o;
 }

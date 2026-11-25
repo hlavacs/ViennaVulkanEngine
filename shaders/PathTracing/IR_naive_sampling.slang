@@ -103,15 +103,18 @@ RWTexture2D<float4> inAlbedoAlpha;
 RWTexture2D<float4> inNormal;
 
 [[vk::binding(2, 2)]]
-RWTexture2D<float4> inSpec;
+RWTexture2D<float4> inTrueNormal;
 
 [[vk::binding(3, 2)]]
-RWTexture2D<float4> inPosition;
+RWTexture2D<float4> inSpec;
 
 [[vk::binding(4, 2)]]
-RWTexture2D<float4> inShadingNormal;
+RWTexture2D<float4> inPosition;
 
 [[vk::binding(5, 2)]]
+RWTexture2D<float4> inShadingNormal;
+
+[[vk::binding(6, 2)]]
 RWTexture2D<float4> outImage;
 
 

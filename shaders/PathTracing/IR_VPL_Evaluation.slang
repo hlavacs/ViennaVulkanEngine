@@ -20,7 +20,7 @@ float3 getUnoccludedContributionFromVPL(in IntersectionRecord itsCamera, in Mate
 
     BSDFQueryRecord bsdfRecCamera = constructBSDFRecord(itsCamera, materialCamera, wo, true);
 
-    float3 bsdf = PrincipledEvalNoCosine(bsdfRecCamera, materialCamera);
+    float3 bsdf = PrincipledEval(bsdfRecCamera, materialCamera);
 
     //this might be incorrect. I think I might need to do distance swared devided by cosine and not the other way around to get the area pdf 
     // but that is very stange
@@ -39,7 +39,11 @@ float3 getUnoccludedContributionFromVPL(in IntersectionRecord itsCamera, in Mate
 
     distance = max(distance, 0.05);
 
-    float geometryTerm = (cosCam * cosVPL) / (distance * distance);
+    //full geometry term
+    //float geometryTerm = (cosCam * cosVPL) / (distance * distance);
+
+    //cos in shader
+    float geometryTerm = (1.0 * cosVPL) / (distance * distance);
 
     return vpl.weightedRadiance.xyz * bsdf * geometryTerm;
 }

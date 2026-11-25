@@ -115,16 +115,19 @@ public float squareToCosineHemispherePdf(in float3 v) {
     }
 }
 
+/*
 public float3 squareToGGX(in float3 wi, in float2 sample, float roughness) {
     // Inputs: incident direction, 2D sample, roughness. Output: sampled micro-normal.
     float3 macronormal = float3(0.0, 0.0, 1.0);
 
-    float3 wh = float3(roughness * wi.x, roughness * wi.y, wi.z);
-    normalize(wh);
+    //max ensures that the incomming direction is on the right side of the hemisphere!!
+    float3 wh = float3(roughness * wi.x, roughness * wi.y, max(0.01, wi.z));
+    wh = normalize(wh);
     if (wh.z < 0) {
         wh = -wh;
     }
 
+    // Construct a stable orthonormal basis around wh.
     float3 BasisVector1 = (wh.z < 0.99999f) ? (normalize(cross(macronormal, wh))) : float3(1, 0, 0);
     float3 BasisVector2 = cross(wh, BasisVector1);
 
@@ -143,6 +146,41 @@ public float3 squareToGGX(in float3 wi, in float2 sample, float roughness) {
     float3 SampledNormal = float3(roughness * nh.x, roughness * nh.y, max(1e-6f, nh.z));
     return normalize(SampledNormal);
 }
+*/
+
+
+public float3 squareToGGX(in float3 wi, in float2 sample, float roughness) {
+    // Inputs: incident direction, 2D sample, roughness. Output: sampled micro-normal.
+    float3 macronormal = float3(0.0, 0.0, 1.0);
+
+    //max ensures that the incomming direction is on the right side of the hemisphere!!
+    float3 wh = float3(roughness * wi.x, roughness * wi.y, wi.z);
+    wh = normalize(wh);
+    if (wh.z < 0) {
+        wh = -wh;
+    }
+
+    // Construct a stable orthonormal basis around wh.
+    float3 BasisVector1 = (wh.z < 0.99999f) ? (normalize(cross(macronormal, wh))) : float3(1, 0, 0);
+    float3 BasisVector2 = cross(wh, BasisVector1);
+
+    float2 p = squareToUniformDisk(sample);
+
+    float h = sqrt(1 - p.x * p.x);
+
+    float scale = 0.5 * (1 + wh.z);
+    float offset = (h / 2.0) * (1 - wh.z);
+
+    p.y = (p.y * scale) + offset;
+
+    float lenghtsquared = p.x * p.x + p.y * p.y;
+    float pz = sqrt(max(0.0, 1.0 - lenghtsquared));
+    float3 nh = p.x * BasisVector1 + p.y * BasisVector2 + pz * wh;
+    float3 SampledNormal = float3(roughness * nh.x, roughness * nh.y, max(1e-6f, nh.z));
+    return normalize(SampledNormal);
+}
+
+
 
 public float G1(in float3 wi, float roughness) {
     // Inputs: direction, roughness. Output: Smith G1 term.
