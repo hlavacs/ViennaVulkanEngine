@@ -12,6 +12,10 @@
 ///   voxel radiance at the hit point with transparency 0, a miss stores no radiance with transparency 1. The last
 ///   cascade's rays reach the sky: its misses store the background colour with transparency 1.
 ///   They use miss index 1 and hit group offset 1.
+/// - RcShadowPayload, RcLight, directLight, shadowMiss: direct light at a point from every light a shadow ray reaches,
+///   as the forward renderer models it (quadratic range falloff, smoothstep spot cone, no ambient); shadow rays use
+///   miss index 2, accept the first hit and skip hit shaders.
+/// - injectRaygen: one invocation per voxel; writes the voxel radiance volume the cascade hits read.
 /// - cascadeMergeRaygen: one invocation per texel of a cascade, traces no ray; merges the already merged next cascade
 ///   into it in place (paper equation 11): L = L_near + T_near * L_far, T = T_near * T_far, where far is the trilinear
 ///   interpolation over the 8 surrounding next-cascade probes of the average of the texel's child directions.
@@ -46,6 +50,19 @@ struct RcIntervalPayload {
 	float4 interval; ///< Radiance gathered over the interval (rgb) and transparency (a): 1 when nothing was hit.
 };
 
+/// @brief Result of one shadow ray.
+struct RcShadowPayload {
+	float visible; ///< 1 when the ray reached the light, else 0.
+};
+
+/// @brief One light row, matching the forward renderer's light model.
+struct RcLight {
+	float4 position;  ///< World position (xyz) and type (w): 0 directional, 1 point, 2 spot.
+	float4 direction; ///< Direction from the light towards the scene (xyz) and range (w; point and spot).
+	float4 radiance;  ///< Colour times intensity (rgb).
+	float4 cone;      ///< Spot cone: cosine of the inner (x) and outer (y) angle.
+};
+
 [[vk::binding(VVE_RC_SCENE_BINDING, 0)]]
 RaytracingAccelerationStructure rcScene; ///< Top-level structure over the scene instances.
 [[vk::binding(VVE_RC_OUTPUT_BINDING, 0)]] [[vk::image_format("rgba16f")]]
@@ -60,6 +77,10 @@ Texture2DArray<float4> rcVoxelEmissive; ///< Average emitted radiance per voxel;
 Texture2DArray<float4> rcVoxelNormal; ///< Average face normal per voxel; layer = z.
 [[vk::binding(VVE_RC_ATLAS_BINDING, VVE_RC_CASCADE_SET)]] [[vk::image_format("rgba16f")]]
 RWTexture2DArray<float4> rcAtlas; ///< Atlas of the bound cascade: a side x side tile per probe in x and y, layer = probe z.
+[[vk::binding(VVE_RC_LIGHT_BINDING, 0)]]
+StructuredBuffer<RcLight> rcLights; ///< Row 0: light count in position.x; rows 1 .. count: the lights.
+[[vk::binding(VVE_RC_RADIANCE_BINDING, 0)]] [[vk::image_format("rgba16f")]]
+RWTexture2DArray<float4> rcVoxelRadiance; ///< Radiance leaving each voxel: emission plus albedo times direct light; layer = z.
 [[vk::binding(VVE_RC_ATLAS_BINDING, VVE_RC_FAR_CASCADE_SET)]] [[vk::image_format("rgba16f")]]
 RWTexture2DArray<float4> rcFarAtlas; ///< Atlas of the next cascade, already merged; read by the merge.
 [[vk::push_constant]]
@@ -201,11 +222,11 @@ void cascadeMiss(inout RcIntervalPayload payload) {
 }
 
 /// @brief A hit ends the interval: the radiance of the voxel at the hit point, nothing behind it.
-/// The voxel radiance is currently the voxel's emission; the inject stage will add the direct light.
+/// The voxel radiance is written by the inject stage of the same frame.
 [shader("closesthit")]
 void cascadeClosestHit(inout RcIntervalPayload payload, in BuiltInTriangleIntersectionAttributes attributes) {
 	const float3 hit = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-	payload.interval = float4(rcVoxelEmissive.Load(voxelAt(hit)).rgb, 0.0);
+	payload.interval = float4(rcVoxelRadiance[uint3(voxelAt(hit).xyz)].rgb, 0.0);
 }
 
 /// @brief Merges the next cascade (far) into the bound one (near) in place. Near texel (x, y, layer) is probe
@@ -243,4 +264,64 @@ void cascadeMergeRaygen() {
 	far /= float(scale * scale);
 	const float4 near = rcAtlas[texel];
 	rcAtlas[texel] = float4(near.rgb + near.a * far.rgb, near.a * far.a);
+}
+
+/// @brief Direct light at a point with the given normal: for every light whose shadow ray from the point is
+/// unoccluded, colour * intensity * max(0, n . l) * falloff. Point and spot lights fade as (1 - d / range)^2,
+/// spot lights also with smoothstep(cos outer, cos inner, cos angle); directional lights are at the sky distance.
+float3 directLight(float3 position, float3 normal) {
+	float3 light = float3(0.0, 0.0, 0.0);
+	const uint count = uint(rcLights[0].position.x);
+	for (uint index = 1; index <= count; ++index) {
+		const RcLight source = rcLights[index];
+		float3 toLight = -normalize(source.direction.xyz);
+		float distance = 10000.0; // Matches the primary rays' TMax.
+		float falloff = 1.0;
+		if (source.position.w != 0.0) {
+			const float3 offset = source.position.xyz - position;
+			distance = length(offset);
+			toLight = offset / max(distance, 0.001);
+			const float range = source.direction.w;
+			const float fade = range > 0.0 ? saturate(1.0 - distance / range) : 0.0;
+			falloff = fade * fade;
+			if (source.position.w == 2.0) { falloff *= smoothstep(source.cone.y, source.cone.x, dot(-toLight, normalize(source.direction.xyz))); }
+		}
+		const float cosine = dot(normal, toLight);
+		if (cosine <= 0.0 || falloff <= 0.0) { continue; }
+		RayDesc ray;
+		ray.Origin = position;
+		ray.Direction = toLight;
+		ray.TMin = 0.0;
+		ray.TMax = distance;
+		RcShadowPayload shadow;
+		shadow.visible = 0.0;
+		TraceRay(rcScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER, 0xFF, 0, 0, 2, ray, shadow);
+		light += source.radiance.rgb * cosine * falloff * shadow.visible;
+	}
+	return light;
+}
+
+/// @brief A shadow ray that reaches its light.
+[shader("miss")]
+void shadowMiss(inout RcShadowPayload payload) {
+	payload.visible = 1.0;
+}
+
+/// @brief Writes the radiance leaving each voxel: emission plus albedo times the direct light. The light is evaluated
+/// one voxel out from the voxel centre along its normal, clear of the voxel's own surface. Voxels whose normals
+/// cancel (two opposite faces) receive no direct light; empty voxels hold zero.
+[shader("raygeneration")]
+void injectRaygen() {
+	const uint3 voxel = DispatchRaysIndex().xyz;
+	const int4 cell = int4(int3(voxel), 0);
+	const float4 albedo = rcVoxelAlbedo.Load(cell);
+	if (albedo.a < 0.5) {
+		rcVoxelRadiance[voxel] = float4(0.0, 0.0, 0.0, 0.0);
+		return;
+	}
+	const float3 normal = rcVoxelNormal.Load(cell).xyz;
+	const float size = rcFrame.volume.w;
+	const float3 centre = rcFrame.volume.xyz + (float3(voxel) + 0.5) * size;
+	const float3 direct = dot(normal, normal) > 0.5 ? directLight(centre + normal * size, normal) : float3(0.0, 0.0, 0.0);
+	rcVoxelRadiance[voxel] = float4(rcVoxelEmissive.Load(cell).rgb + albedo.rgb * direct, 1.0);
 }

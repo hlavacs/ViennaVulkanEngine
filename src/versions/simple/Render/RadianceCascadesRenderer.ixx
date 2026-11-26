@@ -6,6 +6,7 @@ import std;
 import VVEngine.Simple.Types;
 import VVEngine.Simple.Vulkan;
 import VVEngine.Simple.RenderResources;
+import VVEngine.Simple.Scene;
 
 /// @file
 /// @brief Standalone world-space radiance cascades renderer (Sannikov, "Radiance Cascades").
@@ -31,7 +32,8 @@ import VVEngine.Simple.RenderResources;
 /// The probe volume is the voxel volume; one RGBA16F atlas per cascade is created with the scene, and every frame
 /// traces each cascade's intervals into it (voxel emission at hits, transparency 1 for misses; the last cascade's
 /// rays reach the sky, the background colour), then merges the cascades from the last to the first in place.
-/// Without traceable geometry the frame is the background colour. The inject stage is empty.
+/// Before the traces, the inject stage writes each voxel's radiance: emission plus albedo times the direct light of
+/// the bound lights that shadow rays reach. Without traceable geometry the frame is the background colour.
 
 export namespace vve::simple {
 
@@ -108,6 +110,7 @@ export namespace vve::simple {
 
 		// Scene (RadianceCascadesRenderer.cpp). The scene is treated as static: call rebuildScene after changing it.
 		auto bindRenderScene(const RenderScene &scene) -> void;
+		auto bindLights(const Scene &lights) -> void;
 		[[nodiscard]] auto rebuildScene() -> std::expected<void, Error>;
 		[[nodiscard]] std::size_t tracedInstanceCount() const noexcept;
 		auto setCamera(Camera camera) -> void;
@@ -146,6 +149,7 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult createPipeline();
 		[[nodiscard]] VkResult buildScene(const RadianceCascadesVoxels &voxels);
 		[[nodiscard]] VkResult uploadVoxels(const RadianceCascadesVoxels &voxels);
+		[[nodiscard]] VkResult uploadLights();
 		[[nodiscard]] VkResult createCascades();
 		[[nodiscard]] auto buildStructure(VkAccelerationStructureTypeKHR type, const VkAccelerationStructureGeometryKHR &geometry,
 			std::uint32_t primitives) -> std::expected<VkAccelerationStructureKHR, VkResult>;
@@ -184,13 +188,16 @@ export namespace vve::simple {
 		VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};			///< set_layout_, cascade_set_layout_ twice (near and far cascade) and the frame push constants.
 		VkPipeline pipeline_{VK_NULL_HANDLE};							///< Ray tracing pipeline of the primary rays, the cascade rays and the merge.
 		VulkanBuffer shader_table_{};									///< Shader binding table: ray generation, miss and hit group handles.
-		std::array<VkStridedDeviceAddressRegionKHR, 5> shader_regions_{}; ///< Primary, cascade and merge ray generation, then miss and hit regions; miss and hit hold primary then cascade.
+		std::array<VkStridedDeviceAddressRegionKHR, 6> shader_regions_{}; ///< Primary, cascade, merge and inject ray generation, then miss (primary, cascade, shadow) and hit (primary, cascade) regions.
 		const RenderScene *scene_{nullptr};							///< Borrowed CPU scene; read only by rebuildScene and init.
 		std::vector<VulkanBuffer> scene_buffers_{};					///< Vertex, index, structure storage and instance buffers of the scene.
 		std::vector<VkAccelerationStructureKHR> bottom_levels_{};	///< One structure per RenderScene mesh; null for meshes without triangles.
 		VkAccelerationStructureKHR top_level_{VK_NULL_HANDLE};	///< Structure over the traced instances; null when there are none.
 		VulkanBuffer materials_{};										///< Material rows in RenderScene order, plus a white fallback.
 		std::array<VulkanImage, 3> voxels_{};							///< Albedo, emissive and normal volumes as RGBA32F 2D arrays, layer = z.
+		VulkanImage radiance_{};										///< Voxel radiance volume (RGBA16F 2D array, layer = z) the inject stage writes; general layout.
+		const Scene *lights_{nullptr};									///< Borrowed lights; read only by rebuildScene and init.
+		VulkanBuffer light_rows_{};										///< Header row (light count) plus one row per enabled light.
 		Vec3 voxel_origin_{zeroVec3()};									///< RadianceCascadesVoxels::origin of the uploaded volume.
 		Scalar voxel_size_{};											///< RadianceCascadesVoxels::voxel_size of the uploaded volume.
 		std::array<std::uint32_t, 3> voxel_grid_{};						///< RadianceCascadesVoxels::size of the uploaded volume.
@@ -309,11 +316,6 @@ export namespace vve::simple {
 		recordResolve(command);
 	}
 
-	/// @brief Writes voxel radiance: emissive plus albedo times the direct light that a shadow ray finds unoccluded.
-	inline void RadianceCascadesRenderer::recordInject(VkCommandBuffer) {
-		// TODO: ray generation shader, one shadow ray per voxel and light.
-	}
-
 	/// @brief Convenience execution alias for renderFrame.
 	/// @return Result of renderFrame().
 	inline auto RadianceCascadesRenderer::execute() -> std::expected<void, Error> {
@@ -334,6 +336,10 @@ export namespace vve::simple {
 
 	/// @brief Borrows the CPU scene; it must outlive the renderer or be replaced before the next rebuildScene or init.
 	inline auto RadianceCascadesRenderer::bindRenderScene(const RenderScene &scene) -> void { scene_ = std::addressof(scene); }
+
+	/// @brief Borrows the lights (the forward renderer's Scene); like the geometry they are uploaded by rebuildScene and
+	/// init, and must outlive the renderer or be replaced before the next of those. Without lights only emission lights.
+	inline auto RadianceCascadesRenderer::bindLights(const Scene &lights) -> void { lights_ = std::addressof(lights); }
 
 	/// @brief Number of scene instances the rays can hit; sky, sprites, terrain and hidden instances are left out.
 	inline std::size_t RadianceCascadesRenderer::tracedInstanceCount() const noexcept { return traced_instances_; }

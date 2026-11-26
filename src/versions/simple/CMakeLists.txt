@@ -93,9 +93,10 @@ list(APPEND VVE_SIMPLE_SHADER_ENTRIES fragmentMain gbufferMain gbufferMsaaMain s
 list(APPEND VVE_SIMPLE_SHADER_STAGES fragment fragment fragment vertex fragment)
 # Ray tracing stages of the standalone radiance cascades renderer; only RadianceCascadesRenderer.cpp includes them.
 list(APPEND VVE_SIMPLE_SHADER_NAMES simple_rc_primary_raygen simple_rc_primary_miss simple_rc_primary_closest_hit
-   simple_rc_cascade_raygen simple_rc_cascade_miss simple_rc_cascade_closest_hit simple_rc_cascade_merge_raygen)
-list(APPEND VVE_SIMPLE_SHADER_ENTRIES primaryRaygen primaryMiss primaryClosestHit cascadeRaygen cascadeMiss cascadeClosestHit cascadeMergeRaygen)
-list(APPEND VVE_SIMPLE_SHADER_STAGES raygeneration miss closesthit raygeneration miss closesthit raygeneration)
+   simple_rc_cascade_raygen simple_rc_cascade_miss simple_rc_cascade_closest_hit simple_rc_cascade_merge_raygen
+   simple_rc_inject_raygen simple_rc_shadow_miss)
+list(APPEND VVE_SIMPLE_SHADER_ENTRIES primaryRaygen primaryMiss primaryClosestHit cascadeRaygen cascadeMiss cascadeClosestHit cascadeMergeRaygen injectRaygen shadowMiss)
+list(APPEND VVE_SIMPLE_SHADER_STAGES raygeneration miss closesthit raygeneration miss closesthit raygeneration raygeneration miss)
 set(VVE_SIMPLE_SHADER_HEADERS "")
 foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_ENTRIES VVE_SIMPLE_SHADER_STAGES)
    set(HEADER "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/${NAME}_spv.h")

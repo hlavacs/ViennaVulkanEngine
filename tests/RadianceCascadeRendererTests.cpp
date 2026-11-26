@@ -235,6 +235,8 @@ int main() {
 	RenderScene traced{}; // Outlives every use by the renderer, which is shut down below.
 	const auto glow = traced.addMaterial(RenderMaterial{.base_color = {.value = {0.9F, 0.1F, 0.1F}}, .emissive = {.value = {0.2F, 0.4F, 0.6F}}});
 	(void)traced.addInstance(traced.addPlaneMesh(Vec2{0.9F, 0.9F}), glow, {}, math::translate(identityMat4(), Vec3{0.0F, 0.1F, 0.0F}));
+	const simple::Scene noLights{}; // Sections 9 to 11 light the scenes only by emission and the sky.
+	renderer.bindLights(noLights);
 	renderer.bindRenderScene(traced);
 	renderer.setMerging(false); // The atlases keep the raw intervals.
 	if (!renderer.init(window) || renderer.tracedInstanceCount() != 1U || !renderer.renderFrame()) { return 60; }
@@ -442,6 +444,75 @@ int main() {
 	const bool panel_ok = (*nearColour)[0] > 0.01F && (*nearColour)[0] > 4.0F * (*farColour)[0] && (*nearColour)[0] > (*nearColour)[1] &&
 		(*nearColour)[1] > (*nearColour)[2];
 	if (!panel_ok) { return 83; }
+
+	// 12. Inject, with merging off and a black sky. A point light 1.4 m above the grey floor (albedo 0.5, y = 0.1,
+	// half size 0.9): every cascade 0 texel whose ray hits the floor must hold the floor voxel's radiance, albedo *
+	// colour * intensity * cos * (1 - d / range)^2, evaluated one voxel above the voxel centre as the inject stage does.
+	// With a wider grey occluder at y = 1 between the light and the floor, the same texels must be black.
+	simple::Scene pointLit{};
+	pointLit.pointLights.push_back(ForwardPointLight{.position = Vec3{0.0F, 1.5F, 0.0F}, .color = Vec3{1.0F, 0.8F, 0.6F}, .intensity = 2.0F, .range = 4.0F});
+	renderer.bindLights(pointLit);
+	renderer.setMerging(false);
+	RenderScene occluded{}; // Outlives every use by the renderer, which is shut down below.
+	const auto occludedGrey = occluded.addMaterial(RenderMaterial{.base_color = {.value = {0.5F, 0.5F, 0.5F}}});
+	(void)occluded.addInstance(occluded.addPlaneMesh(Vec2{0.9F, 0.9F}), occludedGrey, {}, math::translate(identityMat4(), Vec3{0.0F, 0.1F, 0.0F}));
+	(void)occluded.addInstance(occluded.addPlaneMesh(Vec2{1.5F, 1.5F}), occludedGrey, {}, math::translate(identityMat4(), Vec3{0.0F, 1.0F, 0.0F}));
+	// Floor texels: probes between the floor and the occluder height, rays down onto the floor inside cascade 0's interval.
+	// Hits within a millimetre of the floor edge, a voxel boundary or the interval ends are skipped.
+	const auto floorTexels = [&renderer](Vec3 origin, bool lit, std::size_t &checked) -> std::optional<float> {
+		const auto atlas = renderer.readCascadeAtlas(0U);
+		if (!atlas) { return std::nullopt; }
+		const auto size = renderer.cascadeAtlasSize(0U);
+		const std::uint32_t side = renderer.directionSide(0U);
+		const float spacing = renderer.probeSpacing(0U), end = renderer.intervalEnd(0U), voxel = 0.25F;
+		const auto nearBoundary = [](float value, float step) { const float cells = value / step; return std::abs(cells - std::round(cells)) * step < 1e-3F; };
+		float error{};
+		for (std::uint32_t layer{}; layer < size[2]; ++layer) {
+			for (std::uint32_t y{}; y < size[1]; ++y) {
+				for (std::uint32_t x{}; x < size[0]; ++x) {
+					const Vec3 probe{origin.x + static_cast<float>(x / side) * spacing, origin.y + static_cast<float>(y / side) * spacing,
+						origin.z + static_cast<float>(layer) * spacing};
+					const Vec3 direction = RadianceCascadesRenderer::octahedralDirection(x % side, y % side, side);
+					if (probe.y <= 0.1F || probe.y >= 1.0F || direction.y >= 0.0F) { continue; }
+					const float t = (0.1F - probe.y) / direction.y;
+					const Vec3 hit{probe.x + t * direction.x, 0.1F, probe.z + t * direction.z};
+					if (t > end - 1e-3F || std::abs(hit.x) > 0.9F - 1e-3F || std::abs(hit.z) > 0.9F - 1e-3F ||
+						nearBoundary(hit.x - origin.x, voxel) || nearBoundary(hit.z - origin.z, voxel)) { continue; }
+					std::array<float, 3> expected{};
+					if (lit) {
+						const Vec3 point{origin.x + (std::floor((hit.x - origin.x) / voxel) + 0.5F) * voxel,
+							origin.y + (std::floor((hit.y - origin.y) / voxel) + 0.5F) * voxel + voxel,
+							origin.z + (std::floor((hit.z - origin.z) / voxel) + 0.5F) * voxel};
+						const Vec3 offset{0.0F - point.x, 1.5F - point.y, 0.0F - point.z};
+						const float distance = std::sqrt(offset.x * offset.x + offset.y * offset.y + offset.z * offset.z);
+						const float fade = std::clamp(1.0F - distance / 4.0F, 0.0F, 1.0F);
+						const float response = 0.5F * 2.0F * (offset.y / distance) * fade * fade;
+						expected = {response * 1.0F, response * 0.8F, response * 0.6F};
+					}
+					const Vec4 actual = (*atlas)[x + std::size_t{size[0]} * (y + std::size_t{size[1]} * layer)];
+					for (int channel{}; channel < 3; ++channel) {
+						const float reference = expected[static_cast<std::size_t>(channel)];
+						error = std::max(error, std::abs(actual[channel] - reference) / (1.0F + reference));
+					}
+					error = std::max(error, std::abs(actual.w));
+					++checked;
+				}
+			}
+		}
+		return error;
+	};
+	renderer.bindRenderScene(dark);
+	if (!renderer.rebuildScene() || !renderer.renderFrame()) { return 84; }
+	std::size_t litChecked{}, shadowChecked{};
+	const auto litError = floorTexels(Vec3{-1.25F, -0.25F, -1.25F}, true, litChecked);
+	renderer.bindRenderScene(occluded);
+	if (!renderer.rebuildScene() || !renderer.renderFrame()) { return 85; }
+	const Vec3 occludedVolume = renderer.probeVolumeExtent();
+	if (occludedVolume.x != 3.75F || occludedVolume.y != 1.75F || occludedVolume.z != 3.75F) { return 86; } // Origin (-1.75, -0.25, -1.75).
+	const auto shadowError = floorTexels(Vec3{-1.75F, -0.25F, -1.75F}, false, shadowChecked);
+	if (!litError || !shadowError || litChecked < 10U || shadowChecked < 10U || *litError > 2e-3F || *shadowError > 1e-3F) { return 87; }
+	renderer.bindLights(noLights);
+	renderer.setMerging(true);
 	renderer.shutdown();
 	errors += renderer.validationErrorCount();
 	std::println("[RadianceCascadeRendererTests] intervals hits={},{} misses={},{} mismatches={},{} skipped={},{} atlas_view emission={} background={}",
@@ -452,6 +523,7 @@ int main() {
 	std::println("[RadianceCascadeRendererTests] shading floor={},{},{} expected={},{},{} panel_near={},{},{} panel_far={},{},{}",
 		(*floorColour)[0], (*floorColour)[1], (*floorColour)[2], 0.5F * sky[0] * factor, 0.5F * sky[1] * factor, 0.5F * sky[2] * factor,
 		(*nearColour)[0], (*nearColour)[1], (*nearColour)[2], (*farColour)[0], (*farColour)[1], (*farColour)[2]);
+	std::println("[RadianceCascadeRendererTests] inject lit_texels={} lit_max_error={} shadowed_texels={} shadowed_max_error={}", litChecked, *litError, shadowChecked, *shadowError);
 
 	std::println("[RadianceCascadeRendererTests] wrong_pixels={} resize_requested={} extent={}x{} resized_wrong_pixels={} validation_active={} validation_errors={}",
 		wrong, resized, extent.width, extent.height, resized_wrong, validation, errors);

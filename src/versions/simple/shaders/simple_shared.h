@@ -39,6 +39,8 @@
 #define VVE_RC_VOXEL_ALBEDO_BINDING 3 ///< Radiance cascades renderer: voxel albedo volume, alpha = occupancy.
 #define VVE_RC_VOXEL_EMISSIVE_BINDING 4 ///< Radiance cascades renderer: voxel emitted radiance volume.
 #define VVE_RC_VOXEL_NORMAL_BINDING 5 ///< Radiance cascades renderer: voxel average face normal volume.
+#define VVE_RC_LIGHT_BINDING 6 ///< Radiance cascades renderer: light rows; row 0 holds the light count.
+#define VVE_RC_RADIANCE_BINDING 7 ///< Radiance cascades renderer: voxel radiance volume written by the inject stage.
 #define VVE_RC_CASCADE_SET 1 ///< Radiance cascades renderer: descriptor set of one cascade, one set per cascade.
 #define VVE_RC_ATLAS_BINDING 0 ///< Radiance cascades renderer: the cascade's atlas storage image (set VVE_RC_CASCADE_SET).
 #define VVE_RC_FAR_CASCADE_SET 2 ///< Radiance cascades renderer: set of the next cascade while merging, laid out like VVE_RC_CASCADE_SET.
