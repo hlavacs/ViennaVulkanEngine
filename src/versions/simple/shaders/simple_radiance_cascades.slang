@@ -4,7 +4,7 @@
 /// Functional objects:
 /// - RcFrame, RcMaterial, RcPayload, RcIntervalPayload: push constants, one material row, and the ray payloads.
 /// - primaryRaygen, primaryMiss, primaryClosestHit, cascadeIrradiance: one camera ray per pixel; a hit returns the
-///   emission plus the albedo-weighted irradiance from merged cascade 0, the material base colour or,
+///   emission plus albedo times (direct light + irradiance from merged cascade 0 / pi), the material base colour or,
 ///   in the voxel view, the albedo of the voxel at the hit point; a miss returns the background colour. The atlas
 ///   view shows one layer of a cascade atlas instead of tracing.
 /// - octahedralDirection: direction of an octahedral map coordinate; RadianceCascadesRenderer::octahedralDirection mirrors it.
@@ -42,7 +42,11 @@ struct RcMaterial {
 
 /// @brief Result carried back from the hit and miss stages.
 struct RcPayload {
-	float3 radiance; ///< Linear colour seen along the ray.
+	float3 radiance; ///< Linear colour seen along the ray; for a lit hit, its emission.
+	float3 position; ///< Lit hit: world position.
+	float3 normal;   ///< Lit hit: unit normal facing the ray.
+	float3 albedo;   ///< Lit hit: material base colour.
+	float lit;       ///< 1 when primaryRaygen must add the reflected light of the hit, else 0.
 };
 
 /// @brief Result of one cascade interval ray.
@@ -123,8 +127,15 @@ void primaryRaygen() {
 	ray.TMax = 10000.0;
 	RcPayload payload;
 	payload.radiance = float3(0.0, 0.0, 0.0);
+	payload.lit = 0.0;
 	TraceRay(rcScene, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
-	rcOutput[pixel] = float4(payload.radiance, 1.0);
+	float3 radiance = payload.radiance;
+	if (payload.lit > 0.5) {
+		// Lambertian: direct light (shadow rays start a millimetre off the surface) plus the cascade irradiance / pi.
+		const float3 direct = directLight(payload.position + payload.normal * 0.001, payload.normal);
+		radiance += payload.albedo * (direct + cascadeIrradiance(payload.position, payload.normal) / 3.14159265);
+	}
+	rcOutput[pixel] = float4(radiance, 1.0);
 }
 
 /// @brief Rays that leave the scene see the background colour.
@@ -172,11 +183,11 @@ float3 cascadeIrradiance(float3 position, float3 normal) {
 	return blended * (4.0 * 3.14159265 / float(side * side));
 }
 
-/// @brief Shaded view: emission plus the Lambertian reflection of the cascade 0 irradiance, albedo / pi * E. The
-/// normal is the voxel's average face normal turned towards the ray (or the reversed ray where the normals cancel).
-/// Base colour view: the material base colour. Voxel view: the albedo of the voxel at the hit point; the voxelizer
-/// marks every voxel a triangle touches, so the unmodified hit point always lies in a marked voxel and magenta
-/// reveals a voxelization bug.
+/// @brief Shaded view: returns the surface (emission as radiance, hit point, normal, albedo) for primaryRaygen to
+/// light; the normal is the voxel's average face normal turned towards the ray (or the reversed ray where the normals
+/// cancel). Base colour view: the material base colour. Voxel view: the albedo of the voxel at the hit point; the
+/// voxelizer marks every voxel a triangle touches, so the unmodified hit point always lies in a marked voxel and
+/// magenta reveals a voxelization bug.
 [shader("closesthit")]
 void primaryClosestHit(inout RcPayload payload, in BuiltInTriangleIntersectionAttributes attributes) {
 	const float3 hit = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
@@ -193,7 +204,11 @@ void primaryClosestHit(inout RcPayload payload, in BuiltInTriangleIntersectionAt
 	float3 normal = rcVoxelNormal.Load(voxelAt(hit)).xyz;
 	if (dot(normal, normal) < 0.5) { normal = -WorldRayDirection(); }
 	else if (dot(normal, WorldRayDirection()) > 0.0) { normal = -normal; }
-	payload.radiance = material.emissive.rgb + material.baseColor.rgb / 3.14159265 * cascadeIrradiance(hit, normal);
+	payload.radiance = material.emissive.rgb;
+	payload.position = hit;
+	payload.normal = normal;
+	payload.albedo = material.baseColor.rgb;
+	payload.lit = 1.0;
 }
 
 /// @brief Traces one interval ray per atlas texel of the bound cascade. Texel (x, y, layer) belongs to probe

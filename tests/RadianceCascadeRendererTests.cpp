@@ -511,6 +511,28 @@ int main() {
 	if (occludedVolume.x != 3.75F || occludedVolume.y != 1.75F || occludedVolume.z != 3.75F) { return 86; } // Origin (-1.75, -0.25, -1.75).
 	const auto shadowError = floorTexels(Vec3{-1.75F, -0.25F, -1.75F}, false, shadowChecked);
 	if (!litError || !shadowError || litChecked < 10U || shadowChecked < 10U || *litError > 2e-3F || *shadowError > 1e-3F) { return 87; }
+
+	// 13. Direct light at the camera hits: the floor centre (0, 0.1, 0), 1.4 m straight below the point light, under a
+	// black sky. Its direct light is albedo * colour * intensity * (1 - 1.4 / 4)^2 = 0.4225 * (1, 0.8, 0.6). The floor
+	// lights nothing else, but next-cascade probes under the floor see its lit voxels and the merge interpolates them
+	// in, so the pixel may be brighter: it must keep the light's hue and lie between 97 % and 125 % of the direct light.
+	renderer.setMerging(true);
+	renderer.bindRenderScene(dark);
+	if (!renderer.rebuildScene()) { return 88; }
+	renderer.setCamera(Camera::lookAt(Position{{0.0F, 3.0F, 1.0F}}, Position{{0.0F, 0.1F, 0.0F}}));
+	const auto direct_capture = directory / "direct.png";
+	if (!renderer.captureFrameToPng(direct_capture)) { return 89; }
+	const auto directColour = centreColour(direct_capture);
+	if (!directColour) { return 90; }
+	const std::array directExpected{0.4225F, 0.4225F * 0.8F, 0.4225F * 0.6F};
+	bool direct_ok{std::abs((*directColour)[1] / (*directColour)[0] - 0.8F) < 0.03F && std::abs((*directColour)[2] / (*directColour)[0] - 0.6F) < 0.03F};
+	for (std::size_t channel{}; channel < 3U; ++channel) {
+		const float ratio = (*directColour)[channel] / directExpected[channel];
+		direct_ok = direct_ok && ratio > 0.97F && ratio < 1.25F;
+	}
+	std::println("[RadianceCascadeRendererTests] direct floor={},{},{} expected_direct={},{},{}", (*directColour)[0], (*directColour)[1],
+		(*directColour)[2], directExpected[0], directExpected[1], directExpected[2]);
+	if (!direct_ok) { return 91; }
 	renderer.bindLights(noLights);
 	renderer.setMerging(true);
 	renderer.shutdown();
