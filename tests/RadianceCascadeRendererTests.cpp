@@ -52,9 +52,11 @@ int main() {
 			const double ratio = static_cast<double>(texels(cascade + 1U, large)) / static_cast<double>(texels(cascade, large));
 			if (ratio < 0.45 || ratio > 0.55) { return 50; }
 		}
-		// Volume 16 x 8 x 4: the widest atlas is cascade 3 (5 probes x 32 = 160), the deepest cascade 0 (9 layers).
+		// Volume 16 x 8 x 4: the widest atlas is cascade 3 (5 probes x 32 = 160), the deepest cascade 0 (9 layers), and the
+		// largest dispatch cascade 0's (132 x 68 texels in 9 layers = 80784 invocations).
 		const Vec3 volume{16.0F, 8.0F, 4.0F};
-		if (!layout.atlasesFit(volume, 160U, 9U) || layout.atlasesFit(volume, 159U, 9U) || layout.atlasesFit(volume, 160U, 8U)) { return 51; }
+		if (!layout.atlasesFit(volume, 160U, 9U, 80784U) || layout.atlasesFit(volume, 159U, 9U, 80784U) || layout.atlasesFit(volume, 160U, 8U, 80784U) ||
+			layout.atlasesFit(volume, 160U, 9U, 80783U)) { return 51; }
 		// The merge's child directions of texel (u, v) at side 4 are texels (2u + k, 2v + l) at side 8; they lie inside the
 		// parent's octahedral cell, so each is within 45 degrees of the parent direction.
 		for (std::uint32_t u{}; u < 4U; ++u) {
@@ -67,7 +69,7 @@ int main() {
 			}
 		}
 		// A direction side that would wrap 32 bits is refused instead of fitting by accident.
-		if (!layout.setSettings({.angular_scale = 1U << 16U}) || layout.atlasesFit(volume, 16384U, 2048U)) { return 52; }
+		if (!layout.setSettings({.angular_scale = 1U << 16U}) || layout.atlasesFit(volume, 16384U, 2048U, 1ULL << 30U)) { return 52; }
 	}
 
 	// 0b. CPU voxelization of a 1.8 m square plane with 0.5 m voxels: once between voxel boundaries, once on one

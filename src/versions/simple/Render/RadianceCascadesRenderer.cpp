@@ -392,10 +392,12 @@ namespace vve::simple {
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }
 		auto voxels = scene_ != nullptr ? voxelize(*scene_, settings_.voxel_size) : RadianceCascadesVoxels{};
 		if (!voxels) { return std::unexpected(voxels.error()); }
-		VkPhysicalDeviceProperties properties{};
-		vkGetPhysicalDeviceProperties(physical_device_.physicalDevice, &properties);
-		if (voxels->size[0] != 0U && !atlasesFit(volumeExtent(voxels->size, voxels->voxel_size), properties.limits.maxImageDimension2D,
-			properties.limits.maxImageArrayLayers)) {
+		VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayLimits{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+		VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &rayLimits};
+		vkGetPhysicalDeviceProperties2(physical_device_.physicalDevice, &properties);
+		// The voxel grid itself (the inject dispatch) is capped by maxVoxels, far below the guaranteed 2^30 invocations.
+		if (voxels->size[0] != 0U && !atlasesFit(volumeExtent(voxels->size, voxels->voxel_size), properties.properties.limits.maxImageDimension2D,
+			properties.properties.limits.maxImageArrayLayers, rayLimits.maxRayDispatchInvocationCount)) {
 			return std::unexpected(Error::capacity_exceeded);
 		}
 		if (const VkResult result = buildScene(*voxels); result != VK_SUCCESS) {

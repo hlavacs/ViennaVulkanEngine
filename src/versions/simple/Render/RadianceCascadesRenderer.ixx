@@ -93,7 +93,7 @@ export namespace vve::simple {
 		[[nodiscard]] VkExtent2D atlasExtent(std::uint32_t cascade, Vec3 volumeExtent) const;
 		[[nodiscard]] Scalar intervalStart(std::uint32_t cascade) const;
 		[[nodiscard]] Scalar intervalEnd(std::uint32_t cascade) const;
-		[[nodiscard]] bool atlasesFit(Vec3 volumeExtent, std::uint32_t maxDimension, std::uint32_t maxLayers) const;
+		[[nodiscard]] bool atlasesFit(Vec3 volumeExtent, std::uint32_t maxDimension, std::uint32_t maxLayers, std::uint64_t maxInvocations) const;
 		[[nodiscard]] static Vec3 octahedralDirection(std::uint32_t x, std::uint32_t y, std::uint32_t side);
 
 		// Voxelization (RadianceCascadesRenderer.cpp); pure CPU, so tests need no GPU.
@@ -281,14 +281,17 @@ export namespace vve::simple {
 		return intervalStart(cascade + 1U);
 	}
 
-	/// @brief Reports whether every cascade atlas of a volume fits the device's 2D image size and array layer limits.
+	/// @brief Reports whether every cascade atlas of a volume fits the device's 2D image size and array layer limits, and
+	/// whether its trace and merge dispatches (one invocation per texel) stay within the ray dispatch invocation limit.
 	/// Sizes are computed in double precision, so scale settings that would wrap the 32-bit layout values are refused.
-	inline bool RadianceCascadesRenderer::atlasesFit(Vec3 volumeExtent, std::uint32_t maxDimension, std::uint32_t maxLayers) const {
+	inline bool RadianceCascadesRenderer::atlasesFit(Vec3 volumeExtent, std::uint32_t maxDimension, std::uint32_t maxLayers,
+		std::uint64_t maxInvocations) const {
 		double spacing{settings_.base_probe_spacing};
 		double side{static_cast<double>(settings_.base_direction_side)};
 		for (std::uint32_t cascade{}; cascade < settings_.cascade_count; ++cascade) {
 			const auto probes = [spacing](Scalar extent) { return std::ceil(static_cast<double>(extent) / spacing) + 1.0; };
-			if (probes(volumeExtent.x) * side > maxDimension || probes(volumeExtent.y) * side > maxDimension || probes(volumeExtent.z) > maxLayers) {
+			const double width{probes(volumeExtent.x) * side}, height{probes(volumeExtent.y) * side}, layers{probes(volumeExtent.z)};
+			if (width > maxDimension || height > maxDimension || layers > maxLayers || width * height * layers > static_cast<double>(maxInvocations)) {
 				return false;
 			}
 			spacing *= settings_.spatial_scale;
