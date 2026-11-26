@@ -40,6 +40,25 @@ int main() {
 		if (!layout.setSettings({.base_probe_spacing = 1.0F, .spatial_scale = 3U}) || layout.probeSpacing(2U) != 9.0F) { return 26; }
 	}
 
+	// 0a. Atlas memory and device limits: on a large volume each cascade needs about half the texels of the one before
+	{
+		RadianceCascadesRenderer layout{};
+		const auto texels = [&layout](std::uint32_t cascade, Vec3 volume) {
+			const auto atlas = layout.atlasExtent(cascade, volume);
+			return std::uint64_t{atlas.width} * atlas.height * layout.probeCount(cascade, volume)[2];
+		};
+		const Vec3 large{64.0F, 64.0F, 64.0F};
+		for (std::uint32_t cascade{}; cascade + 1U < layout.settings().cascade_count; ++cascade) {
+			const double ratio = static_cast<double>(texels(cascade + 1U, large)) / static_cast<double>(texels(cascade, large));
+			if (ratio < 0.45 || ratio > 0.55) { return 50; }
+		}
+		// Volume 16 x 8 x 4: the widest atlas is cascade 3 (5 probes x 32 = 160), the deepest cascade 0 (9 layers).
+		const Vec3 volume{16.0F, 8.0F, 4.0F};
+		if (!layout.atlasesFit(volume, 160U, 9U) || layout.atlasesFit(volume, 159U, 9U) || layout.atlasesFit(volume, 160U, 8U)) { return 51; }
+		// A direction side that would wrap 32 bits is refused instead of fitting by accident.
+		if (!layout.setSettings({.angular_scale = 1U << 16U}) || layout.atlasesFit(volume, 16384U, 2048U)) { return 52; }
+	}
+
 	// 0b. CPU voxelization of a 1.8 m square plane with 0.5 m voxels: once between voxel boundaries, once on one
 	{
 		RenderScene empty{};
@@ -138,10 +157,20 @@ int main() {
 	// 7. Primary rays: a red cube on a green ground; the camera looks at the cube's centre from above the ground
 	auto &render = engine.renderSystem();
 	if (renderer.tracedInstanceCount() != 0U) { return 31; }
+	if (renderer.cascadeAtlasSize(0U) != std::array{0U, 0U, 0U}) { return 58; } // No geometry, no atlases.
 	if (!render.addPlane(Vec2{5.0F, 5.0F}, LinearColor{.value = {0.0F, 1.0F, 0.0F}}) ||
 		!render.addCuboid(Vec3{-1.0F, 0.0F, -1.0F}, Vec3{1.0F, 2.0F, 1.0F}, LinearColor{.value = {1.0F, 0.0F, 0.0F}})) { return 32; }
 	renderer.setCamera(Camera::lookAt(Position{{0.0F, 3.0F, 8.0F}}, Position{{0.0F, 1.0F, 0.0F}}));
 	if (!renderer.rebuildScene() || renderer.tracedInstanceCount() != 2U) { return 33; }
+	// Cascade atlases over the 43 x 11 x 43 voxel volume (10.75 x 2.75 x 10.75 m): cascade 0 has 23 x 7 x 23 probes of 4 x 4 directions.
+	const Vec3 probeVolume = renderer.probeVolumeExtent();
+	if (probeVolume.x != 10.75F || probeVolume.y != 2.75F || probeVolume.z != 10.75F) { return 53; }
+	if (renderer.cascadeAtlasSize(0U) != std::array{92U, 28U, 23U}) { return 54; }
+	for (std::uint32_t cascade{}; cascade < renderer.settings().cascade_count; ++cascade) {
+		const auto atlas = renderer.atlasExtent(cascade, probeVolume);
+		if (renderer.cascadeAtlasSize(cascade) != std::array{atlas.width, atlas.height, renderer.probeCount(cascade, probeVolume)[2]}) { return 55; }
+	}
+	if (renderer.cascadeAtlasSize(renderer.settings().cascade_count) != std::array{0U, 0U, 0U}) { return 56; }
 	const auto scene_capture = directory / "scene.png";
 	if (!renderer.renderFrame() || !renderer.captureFrameToPng(scene_capture)) { return 34; }
 	const auto scene_pixels = test::imagePixels(scene_capture);
@@ -179,6 +208,7 @@ int main() {
 	const bool validation = renderer.validationActive();
 	renderer.shutdown();
 	if (renderer.initialized() || renderer.tracedInstanceCount() != 0U) { return 17; }
+	if (renderer.cascadeAtlasSize(0U) != std::array{0U, 0U, 0U}) { return 57; }
 	const auto after = renderer.renderFrame();
 	if (after || after.error() != Error::not_initialized) { return 18; }
 	std::uint64_t errors = renderer.validationErrorCount();

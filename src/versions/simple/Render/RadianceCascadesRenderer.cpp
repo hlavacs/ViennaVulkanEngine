@@ -21,8 +21,9 @@ import VVEngine.Simple.RenderResources;
 /// - init / cleanup: own Vulkan instance, ray tracing device, allocator, swapchain and frame synchronization.
 /// - createPipeline: descriptor set, ray tracing pipeline and shader binding table of the primary rays.
 /// - voxelize / triangleTouchesBox: CPU voxelization of the traced instances.
-/// - rebuildScene / buildScene / buildStructure / uploadVoxels: voxel volumes, geometry upload, one bottom-level
-///   structure per mesh, one top-level structure over the instances, and the material buffer.
+/// - rebuildScene / buildScene / buildStructure / uploadVoxels / createCascades: voxel volumes, cascade atlases,
+///   geometry upload, one bottom-level structure per mesh, one top-level structure over the instances, and the
+///   material buffer.
 /// - renderFrame / drawFrame / recordFrame / recordResolve: acquire, record, submit and present one frame.
 /// - captureFrameToPng: renders one more frame and copies its swapchain image into a PNG.
 ///
@@ -35,6 +36,7 @@ namespace vve::simple {
 		constexpr std::uint64_t frameFenceTimeoutNs{1'000'000'000ULL}; ///< A frame slot busy for longer skips the frame.
 		constexpr std::uint64_t acquireTimeoutNs{100'000'000ULL};      ///< No swapchain image within this time skips the frame.
 		constexpr VkFormat outputFormat{VK_FORMAT_R16G16B16A16_SFLOAT}; ///< Linear HDR; the blit to an sRGB swapchain encodes it.
+		constexpr VkFormat cascadeFormat{VK_FORMAT_R16G16B16A16_SFLOAT}; ///< Radiance interval (rgb) and transparency (a) per probe direction.
 
 		/// @brief Push constants of every stage; the layout matches RcFrame in simple_radiance_cascades.slang.
 		struct FrameConstants {
@@ -150,7 +152,6 @@ namespace vve::simple {
 	/// @brief Waits for the device, then releases every Vulkan object in reverse creation order.
 	auto RadianceCascadesRenderer::cleanup() -> void {
 		waitIdle();
-		cascades_.clear();
 		destroyScene();
 		shader_table_.cleanup();
 		if (device_.device != VK_NULL_HANDLE) {
@@ -309,12 +310,19 @@ namespace vve::simple {
 	}
 
 	/// @brief Voxelizes the bound scene, then rebuilds the voxel volumes, acceleration structures and material buffer.
-	/// @return Error::not_initialized before init, the voxelize errors (the previous scene stays), or
+	/// @return Error::not_initialized before init, the voxelize errors or Error::capacity_exceeded when a cascade atlas
+	/// exceeds the device's image limits (the previous scene stays in both cases), or
 	/// Error::platform_error when Vulkan fails (the renderer then has no scene).
 	auto RadianceCascadesRenderer::rebuildScene() -> std::expected<void, Error> {
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }
 		auto voxels = scene_ != nullptr ? voxelize(*scene_, settings_.voxel_size) : RadianceCascadesVoxels{};
 		if (!voxels) { return std::unexpected(voxels.error()); }
+		VkPhysicalDeviceProperties properties{};
+		vkGetPhysicalDeviceProperties(physical_device_.physicalDevice, &properties);
+		if (voxels->size[0] != 0U && !atlasesFit(volumeExtent(voxels->size, voxels->voxel_size), properties.limits.maxImageDimension2D,
+			properties.limits.maxImageArrayLayers)) {
+			return std::unexpected(Error::capacity_exceeded);
+		}
 		if (const VkResult result = buildScene(*voxels); result != VK_SUCCESS) {
 			waitIdle();
 			destroyScene(); // Never leave a structure without its voxel volumes.
@@ -455,6 +463,20 @@ namespace vve::simple {
 		return VK_SUCCESS;
 	}
 
+	/// @brief Creates one atlas per cascade over the uploaded voxel volume: rgb radiance and alpha transparency of every
+	/// probe direction, written and read as a storage image. Without voxels no atlas is created.
+	VkResult RadianceCascadesRenderer::createCascades() {
+		if (voxel_grid_[0] == 0U) { return VK_SUCCESS; }
+		const Vec3 extent{probeVolumeExtent()};
+		cascades_.resize(settings_.cascade_count);
+		for (std::uint32_t cascade{}; cascade < settings_.cascade_count; ++cascade) {
+			const VkResult result = cascades_[cascade].create(allocator_, device_.device, atlasExtent(cascade, extent), cascadeFormat,
+				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, probeCount(cascade, extent)[2], false, true);
+			if (result != VK_SUCCESS) { return result; }
+		}
+		return VK_SUCCESS;
+	}
+
 	/// @brief Releases the acceleration structures and every scene buffer; the device must be idle.
 	void RadianceCascadesRenderer::destroyScene() {
 		if (device_.device != VK_NULL_HANDLE) {
@@ -466,6 +488,7 @@ namespace vve::simple {
 		bottom_levels_.clear();
 		scene_buffers_.clear();
 		materials_.cleanup();
+		cascades_.clear();
 		for (auto &volume : voxels_) { volume.cleanup(); }
 		voxel_origin_ = zeroVec3();
 		voxel_size_ = zero();
@@ -531,6 +554,7 @@ namespace vve::simple {
 		destroyScene();
 		if (scene_ == nullptr) { return VK_SUCCESS; }
 		if (const VkResult uploaded = uploadVoxels(voxels); uploaded != VK_SUCCESS) { return uploaded; }
+		if (const VkResult created = createCascades(); created != VK_SUCCESS) { return created; }
 		const auto &dispatch = *device_.device.handle.getDispatcher();
 		const auto &meshes = scene_->meshes();
 		const auto &materials = scene_->materials();

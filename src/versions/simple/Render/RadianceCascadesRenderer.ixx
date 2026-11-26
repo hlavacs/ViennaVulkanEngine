@@ -27,6 +27,7 @@ import VVEngine.Simple.RenderResources;
 /// Implemented so far: settings, layout, device bring-up, CPU voxelization uploaded as RGBA32F 2D array images
 /// (layer = z), acceleration structures over the bound RenderScene, and a frame that traces one camera ray per pixel
 /// (material colour or a voxel debug view, no lighting) into the HDR output image and blits it to the swapchain.
+/// The probe volume is the voxel volume; one RGBA16F atlas per cascade is created with the scene.
 /// Without traceable geometry the frame is the background colour. The cascade stages are empty.
 
 export namespace vve::simple {
@@ -84,6 +85,7 @@ export namespace vve::simple {
 		[[nodiscard]] VkExtent2D atlasExtent(std::uint32_t cascade, Vec3 volumeExtent) const;
 		[[nodiscard]] Scalar intervalStart(std::uint32_t cascade) const;
 		[[nodiscard]] Scalar intervalEnd(std::uint32_t cascade) const;
+		[[nodiscard]] bool atlasesFit(Vec3 volumeExtent, std::uint32_t maxDimension, std::uint32_t maxLayers) const;
 
 		// Voxelization (RadianceCascadesRenderer.cpp); pure CPU, so tests need no GPU.
 		static constexpr std::uint32_t maxVoxelsPerAxis{2048U};		///< Guaranteed minimum of maxImageArrayLayers; also below maxImageDimension2D.
@@ -106,6 +108,8 @@ export namespace vve::simple {
 		auto setView(RadianceCascadesView view) -> void;
 		[[nodiscard]] RadianceCascadesView view() const noexcept;
 		[[nodiscard]] std::array<std::uint32_t, 3> voxelGrid() const noexcept;
+		[[nodiscard]] Vec3 probeVolumeExtent() const noexcept;
+		[[nodiscard]] std::array<std::uint32_t, 3> cascadeAtlasSize(std::uint32_t cascade) const noexcept;
 
 		// Per-frame work (RadianceCascadesRenderer.cpp).
 		[[nodiscard]] auto renderFrame() -> std::expected<void, Error>;
@@ -124,12 +128,14 @@ export namespace vve::simple {
 	private:
 		static constexpr std::uint32_t framesInFlight{2U};			///< Independently fenced frame slots.
 
+		[[nodiscard]] static Vec3 volumeExtent(std::array<std::uint32_t, 3> grid, Scalar voxelSize) noexcept;
 		[[nodiscard]] VkExtent2D windowPixelExtent() const;
 		[[nodiscard]] VkResult createSwapchainResources(VkExtent2D extent);
 		[[nodiscard]] VkResult syncSwapchain(VkExtent2D extent);
 		[[nodiscard]] VkResult createPipeline();
 		[[nodiscard]] VkResult buildScene(const RadianceCascadesVoxels &voxels);
 		[[nodiscard]] VkResult uploadVoxels(const RadianceCascadesVoxels &voxels);
+		[[nodiscard]] VkResult createCascades();
 		[[nodiscard]] auto buildStructure(VkAccelerationStructureTypeKHR type, const VkAccelerationStructureGeometryKHR &geometry,
 			std::uint32_t primitives) -> std::expected<VkAccelerationStructureKHR, VkResult>;
 		void destroyScene();
@@ -176,7 +182,7 @@ export namespace vve::simple {
 		std::size_t traced_instances_{};								///< Instances inside top_level_.
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< View of the primary rays; the default matches the forward renderer.
-		std::vector<VulkanImage> cascades_{};							///< One 2D array atlas per cascade: a layer per probe z slice.
+		std::vector<VulkanImage> cascades_{};							///< One RGBA16F 2D array atlas per cascade: a layer per probe z slice; empty without a scene.
 		std::uint32_t current_frame_{0U};								///< Frame slot used by the next frame.
 		bool initialized_{false};										///< Tracks whether the renderer has been initialized.
 		std::uint64_t rendered_frames_{0};							///< Lifetime count of presented frames.
@@ -248,6 +254,22 @@ export namespace vve::simple {
 	/// @brief Distance in metres at which the rays of a cascade end; equals the start of the next cascade.
 	inline Scalar RadianceCascadesRenderer::intervalEnd(std::uint32_t cascade) const {
 		return intervalStart(cascade + 1U);
+	}
+
+	/// @brief Reports whether every cascade atlas of a volume fits the device's 2D image size and array layer limits.
+	/// Sizes are computed in double precision, so scale settings that would wrap the 32-bit layout values are refused.
+	inline bool RadianceCascadesRenderer::atlasesFit(Vec3 volumeExtent, std::uint32_t maxDimension, std::uint32_t maxLayers) const {
+		double spacing{settings_.base_probe_spacing};
+		double side{static_cast<double>(settings_.base_direction_side)};
+		for (std::uint32_t cascade{}; cascade < settings_.cascade_count; ++cascade) {
+			const auto probes = [spacing](Scalar extent) { return std::ceil(static_cast<double>(extent) / spacing) + 1.0; };
+			if (probes(volumeExtent.x) * side > maxDimension || probes(volumeExtent.y) * side > maxDimension || probes(volumeExtent.z) > maxLayers) {
+				return false;
+			}
+			spacing *= settings_.spatial_scale;
+			side *= settings_.angular_scale;
+		}
+		return true;
 	}
 
 	/// @brief Shuts down the renderer.
@@ -322,6 +344,21 @@ export namespace vve::simple {
 
 	/// @brief Voxels per axis of the uploaded volume; zero without a scene or before init.
 	inline std::array<std::uint32_t, 3> RadianceCascadesRenderer::voxelGrid() const noexcept { return voxel_grid_; }
+
+	/// @brief Size in metres of the probe volume, which is the voxel volume; its minimum corner is the voxel origin.
+	inline Vec3 RadianceCascadesRenderer::probeVolumeExtent() const noexcept { return volumeExtent(voxel_grid_, voxel_size_); }
+
+	/// @brief Size in metres of a voxel grid; the one expression the probe layout and the atlas limit check share.
+	inline Vec3 RadianceCascadesRenderer::volumeExtent(std::array<std::uint32_t, 3> grid, Scalar voxelSize) noexcept {
+		return scale(Vec3{static_cast<Scalar>(grid[0]), static_cast<Scalar>(grid[1]), static_cast<Scalar>(grid[2])}, voxelSize);
+	}
+
+	/// @brief Width, height and layer count of a cascade's atlas; zero without a scene, before init or past the last cascade.
+	inline std::array<std::uint32_t, 3> RadianceCascadesRenderer::cascadeAtlasSize(std::uint32_t cascade) const noexcept {
+		if (cascade >= cascades_.size()) { return {}; }
+		const auto &atlas = cascades_[cascade];
+		return {atlas.extent.width, atlas.extent.height, atlas.layerCount};
+	}
 
 	/// @brief Instances the rays and the voxelizer see: visible ordinary meshes, not the sky, sprites or terrain.
 	inline bool RadianceCascadesRenderer::traced(const RenderInstance &instance) noexcept {
