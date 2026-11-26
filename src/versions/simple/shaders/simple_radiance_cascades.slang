@@ -8,8 +8,12 @@
 ///   view shows one layer of a cascade atlas instead of tracing.
 /// - octahedralDirection: direction of an octahedral map coordinate; RadianceCascadesRenderer::octahedralDirection mirrors it.
 /// - cascadeRaygen, cascadeMiss, cascadeClosestHit: one ray per atlas texel over the cascade's interval; a hit stores the
-///   voxel radiance at the hit point with transparency 0, a miss stores no radiance with transparency 1.
+///   voxel radiance at the hit point with transparency 0, a miss stores no radiance with transparency 1. The last
+///   cascade's rays reach the sky: its misses store the background colour with transparency 1.
 ///   They use miss index 1 and hit group offset 1.
+/// - cascadeMergeRaygen: one invocation per texel of a cascade, traces no ray; merges the already merged next cascade
+///   into it in place (paper equation 11): L = L_near + T_near * L_far, T = T_near * T_far, where far is the trilinear
+///   interpolation over the 8 surrounding next-cascade probes of the average of the texel's child directions.
 #include "simple_shared.h"
 
 /// @brief Camera, background and voxel volume of one frame; C++ fills the same layout as push constants.
@@ -18,10 +22,11 @@ struct RcFrame {
 	float4 right;      ///< Camera right, scaled by tan(fov / 2) * aspect.
 	float4 up;         ///< Camera up, scaled by tan(fov / 2).
 	float4 forward;    ///< Normalized view direction.
-	float4 background; ///< Linear colour of rays that hit nothing.
+	float4 background; ///< Linear colour of rays that hit nothing (rgb); w is 1 while tracing the last cascade, whose misses see it as sky.
 	float4 volume;     ///< Voxel volume origin (xyz) and voxel size (w).
 	float4 grid;       ///< Voxels per axis (xyz) and the RadianceCascadesView (w): 0 shaded, 1 voxel albedo, 2 cascade atlas.
-	float4 stage;      ///< Cascade trace: probe spacing, interval start, interval end, direction side. Atlas view: layer (x).
+	float4 stage;      ///< Cascade trace: probe spacing, interval start, interval end, direction side. Merge: near and far
+	                   ///< probe spacing, near and far direction side. Atlas view: layer (x).
 };
 
 /// @brief One row of the material buffer; the instance custom index selects it.
@@ -54,6 +59,8 @@ Texture2DArray<float4> rcVoxelEmissive; ///< Average emitted radiance per voxel;
 Texture2DArray<float4> rcVoxelNormal; ///< Average face normal per voxel; layer = z.
 [[vk::binding(VVE_RC_ATLAS_BINDING, VVE_RC_CASCADE_SET)]] [[vk::image_format("rgba16f")]]
 RWTexture2DArray<float4> rcAtlas; ///< Atlas of the bound cascade: a side x side tile per probe in x and y, layer = probe z.
+[[vk::binding(VVE_RC_ATLAS_BINDING, VVE_RC_FAR_CASCADE_SET)]] [[vk::image_format("rgba16f")]]
+RWTexture2DArray<float4> rcFarAtlas; ///< Atlas of the next cascade, already merged; read by the merge.
 [[vk::push_constant]]
 RcFrame rcFrame; ///< Frame constants.
 
@@ -136,10 +143,10 @@ void cascadeRaygen() {
 	rcAtlas[texel] = payload.interval;
 }
 
-/// @brief An interval that hits nothing adds no radiance and lets everything behind it through.
+/// @brief An interval that hits nothing lets everything behind it through; only the last cascade's rays see the sky.
 [shader("miss")]
 void cascadeMiss(inout RcIntervalPayload payload) {
-	payload.interval = float4(0.0, 0.0, 0.0, 1.0);
+	payload.interval = float4(rcFrame.background.rgb * rcFrame.background.w, 1.0);
 }
 
 /// @brief A hit ends the interval: the radiance of the voxel at the hit point, nothing behind it.
@@ -148,4 +155,41 @@ void cascadeMiss(inout RcIntervalPayload payload) {
 void cascadeClosestHit(inout RcIntervalPayload payload, in BuiltInTriangleIntersectionAttributes attributes) {
 	const float3 hit = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
 	payload.interval = float4(rcVoxelEmissive.Load(voxelAt(hit)).rgb, 0.0);
+}
+
+/// @brief Merges the next cascade (far) into the bound one (near) in place. Near texel (x, y, layer) is probe
+/// (x / side, y / side, layer) and direction (x, y) % side; its child directions in a far tile are the
+/// scale x scale texels starting at direction * scale, with scale = far side / side. Far probes outside the far grid
+/// are clamped to its border.
+[shader("raygeneration")]
+void cascadeMergeRaygen() {
+	const uint3 texel = DispatchRaysIndex().xyz;
+	const uint side = uint(rcFrame.stage.z);
+	const uint farSide = uint(rcFrame.stage.w);
+	const uint scale = farSide / side;
+	uint farWidth, farHeight, farLayers;
+	rcFarAtlas.GetDimensions(farWidth, farHeight, farLayers);
+	const int3 farCount = int3(int(farWidth / farSide), int(farHeight / farSide), int(farLayers));
+	const uint2 children = (texel.xy % side) * scale;
+
+	// Probe position in far probe units, relative to the volume origin.
+	const float3 position = float3(float2(texel.xy / side), float(texel.z)) * rcFrame.stage.x / rcFrame.stage.y;
+	const int3 base = int3(floor(position));
+	const float3 fraction = position - float3(base);
+	float4 far = float4(0.0, 0.0, 0.0, 0.0);
+	for (uint corner = 0; corner < 8; ++corner) {
+		const int3 offset = int3(int(corner & 1), int((corner >> 1) & 1), int((corner >> 2) & 1));
+		const float3 weights = float3(offset) * fraction + float3(1 - offset) * (1.0 - fraction);
+		const float weight = weights.x * weights.y * weights.z;
+		if (weight == 0.0) { continue; }
+		const uint3 probe = uint3(clamp(base + offset, int3(0, 0, 0), farCount - 1));
+		for (uint k = 0; k < scale; ++k) {
+			for (uint l = 0; l < scale; ++l) {
+				far += weight * rcFarAtlas[uint3(probe.xy * farSide + children + uint2(k, l), probe.z)];
+			}
+		}
+	}
+	far /= float(scale * scale);
+	const float4 near = rcAtlas[texel];
+	rcAtlas[texel] = float4(near.rgb + near.a * far.rgb, near.a * far.a);
 }

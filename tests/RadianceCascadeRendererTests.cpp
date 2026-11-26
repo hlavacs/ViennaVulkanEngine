@@ -55,6 +55,17 @@ int main() {
 		// Volume 16 x 8 x 4: the widest atlas is cascade 3 (5 probes x 32 = 160), the deepest cascade 0 (9 layers).
 		const Vec3 volume{16.0F, 8.0F, 4.0F};
 		if (!layout.atlasesFit(volume, 160U, 9U) || layout.atlasesFit(volume, 159U, 9U) || layout.atlasesFit(volume, 160U, 8U)) { return 51; }
+		// The merge's child directions of texel (u, v) at side 4 are texels (2u + k, 2v + l) at side 8; they lie inside the
+		// parent's octahedral cell, so each is within 45 degrees of the parent direction.
+		for (std::uint32_t u{}; u < 4U; ++u) {
+			for (std::uint32_t v{}; v < 4U; ++v) {
+				const Vec3 parent = RadianceCascadesRenderer::octahedralDirection(u, v, 4U);
+				for (std::uint32_t child{}; child < 4U; ++child) {
+					const Vec3 direction = RadianceCascadesRenderer::octahedralDirection(2U * u + child % 2U, 2U * v + child / 2U, 8U);
+					if (parent.x * direction.x + parent.y * direction.y + parent.z * direction.z < 0.7071F) { return 59; }
+				}
+			}
+		}
 		// A direction side that would wrap 32 bits is refused instead of fitting by accident.
 		if (!layout.setSettings({.angular_scale = 1U << 16U}) || layout.atlasesFit(volume, 16384U, 2048U)) { return 52; }
 	}
@@ -224,6 +235,7 @@ int main() {
 	const auto glow = traced.addMaterial(RenderMaterial{.base_color = {.value = {0.9F, 0.1F, 0.1F}}, .emissive = {.value = {0.2F, 0.4F, 0.6F}}});
 	(void)traced.addInstance(traced.addPlaneMesh(Vec2{0.9F, 0.9F}), glow, {}, math::translate(identityMat4(), Vec3{0.0F, 0.1F, 0.0F}));
 	renderer.bindRenderScene(traced);
+	renderer.setMerging(false); // The atlases keep the raw intervals.
 	if (!renderer.init(window) || renderer.tracedInstanceCount() != 1U || !renderer.renderFrame()) { return 60; }
 	const Vec3 tracedVolume = renderer.probeVolumeExtent();
 	if (tracedVolume.x != 2.5F || tracedVolume.y != 0.75F || tracedVolume.z != 2.5F) { return 61; }
@@ -281,11 +293,106 @@ int main() {
 	const std::size_t backgroundPixels = atlasPixelCount - wrongPixels(*atlas_pixels, {124, 188, 255, 255});
 	const std::size_t emissionPixels = atlasPixelCount - wrongPixels(*atlas_pixels, {124, 170, 203, 255});
 	if (backgroundPixels == 0U || emissionPixels == 0U || backgroundPixels + emissionPixels != atlasPixelCount) { return 67; }
+
+	// 10. Merge, step by step: one merged frame must turn each cascade into its raw intervals merged with the merged next
+	// cascade, as computed on the CPU from the two read-back atlases; the last cascade, which saw the sky, stays raw.
+	const std::uint32_t cascadeCount = renderer.settings().cascade_count;
+	const auto readAll = [&renderer, cascadeCount]() -> std::optional<std::vector<std::vector<Vec4>>> {
+		auto atlases = std::vector<std::vector<Vec4>>{};
+		for (std::uint32_t cascade{}; cascade < cascadeCount; ++cascade) {
+			auto atlas = renderer.readCascadeAtlas(cascade);
+			if (!atlas) { return std::nullopt; }
+			atlases.push_back(std::move(*atlas));
+		}
+		return atlases;
+	};
+	// L = L_near + T_near * L_far, T = T_near * T_far; far interpolates the 8 surrounding next-cascade probes
+	// trilinearly (clamped to the far grid) and averages the scale x scale child directions of the texel.
+	const auto referenceMerge = [&renderer](std::uint32_t cascade, const std::vector<Vec4> &near, const std::vector<Vec4> &far) {
+		const auto size = renderer.cascadeAtlasSize(cascade), farSize = renderer.cascadeAtlasSize(cascade + 1U);
+		const std::uint32_t side = renderer.directionSide(cascade), farSide = renderer.directionSide(cascade + 1U), scale = farSide / side;
+		const float ratio = renderer.probeSpacing(cascade) / renderer.probeSpacing(cascade + 1U);
+		const std::array<int, 3> farCount{static_cast<int>(farSize[0] / farSide), static_cast<int>(farSize[1] / farSide), static_cast<int>(farSize[2])};
+		auto result = std::vector<Vec4>(near.size());
+		for (std::uint32_t layer{}; layer < size[2]; ++layer) {
+			for (std::uint32_t y{}; y < size[1]; ++y) {
+				for (std::uint32_t x{}; x < size[0]; ++x) {
+					const std::array<float, 3> position{static_cast<float>(x / side) * ratio, static_cast<float>(y / side) * ratio, static_cast<float>(layer) * ratio};
+					std::array<float, 4> sum{};
+					for (int corner{}; corner < 8; ++corner) {
+						float weight{1.0F};
+						std::array<std::uint32_t, 3> probe{};
+						for (int axis{}; axis < 3; ++axis) {
+							const int offset{(corner >> axis) & 1};
+							const float base = std::floor(position[axis]), fraction = position[axis] - base;
+							weight *= offset != 0 ? fraction : 1.0F - fraction;
+							probe[axis] = static_cast<std::uint32_t>(std::clamp(static_cast<int>(base) + offset, 0, farCount[axis] - 1));
+						}
+						if (weight == 0.0F) { continue; }
+						for (std::uint32_t k{}; k < scale; ++k) {
+							for (std::uint32_t l{}; l < scale; ++l) {
+								const std::size_t fx{probe[0] * farSide + (x % side) * scale + k}, fy{probe[1] * farSide + (y % side) * scale + l};
+								const Vec4 value = far[fx + std::size_t{farSize[0]} * (fy + std::size_t{farSize[1]} * probe[2])];
+								for (int channel{}; channel < 4; ++channel) { sum[static_cast<std::size_t>(channel)] += weight * value[channel]; }
+							}
+						}
+					}
+					const std::size_t index{x + std::size_t{size[0]} * (y + std::size_t{size[1]} * layer)};
+					const Vec4 n = near[index];
+					const float count = static_cast<float>(scale * scale);
+					result[index] = Vec4{n.x + n.w * sum[0] / count, n.y + n.w * sum[1] / count, n.z + n.w * sum[2] / count, n.w * sum[3] / count};
+				}
+			}
+		}
+		return result;
+	};
+	const auto raw = readAll();
+	renderer.setMerging(true);
+	if (!raw || !renderer.renderFrame()) { return 70; }
+	const auto merged = readAll();
+	const auto sameTexel = [](const Vec4 &a, const Vec4 &b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; };
+	if (!merged || !std::ranges::equal(merged->back(), raw->back(), sameTexel)) { return 71; }
+	float mergeError{};
+	for (std::uint32_t cascade{}; cascade + 1U < cascadeCount; ++cascade) {
+		const auto expected = referenceMerge(cascade, (*raw)[cascade], (*merged)[cascade + 1U]);
+		for (std::size_t texel{}; texel < expected.size(); ++texel) {
+			for (int channel{}; channel < 4; ++channel) {
+				const float reference = expected[texel][channel];
+				mergeError = std::max(mergeError, std::abs((*merged)[cascade][texel][channel] - reference) / (1.0F + std::abs(reference)));
+			}
+		}
+	}
+	if (mergeError > 2e-3F) { return 72; }
+
+	// 10b. Sky only: with a grey plane that emits nothing, the sky is the only light, so every merged texel of every cascade holds the
+	// sky colour (the background, linear 0.2, 0.5, 1) times its merged transparency. Cascade 0 must have texels that
+	// see all, none and part of the sky.
+	RenderScene dark{}; // Outlives every use by the renderer, which is shut down below.
+	const auto grey = dark.addMaterial(RenderMaterial{.base_color = {.value = {0.5F, 0.5F, 0.5F}}});
+	(void)dark.addInstance(dark.addPlaneMesh(Vec2{0.9F, 0.9F}), grey, {}, math::translate(identityMat4(), Vec3{0.0F, 0.1F, 0.0F}));
+	renderer.bindRenderScene(dark);
+	if (!renderer.rebuildScene() || !renderer.renderFrame()) { return 73; }
+	const auto skyLit = readAll();
+	if (!skyLit) { return 74; }
+	const std::array sky{0.2F, 0.5F, 1.0F};
+	float skyError{};
+	std::array<std::size_t, 3> skySeen{}; // Cascade 0 texels that see all, none and part of the sky.
+	for (std::uint32_t cascade{}; cascade < cascadeCount; ++cascade) {
+		for (const Vec4 &texel : (*skyLit)[cascade]) {
+			for (std::size_t channel{}; channel < 3U; ++channel) {
+				skyError = std::max(skyError, std::abs(texel[static_cast<int>(channel)] - sky[channel] * texel.w));
+			}
+			if (cascade == 0U) { ++skySeen[texel.w > 0.999F ? 0U : texel.w < 0.001F ? 1U : 2U]; }
+		}
+	}
+	if (skyError > 2e-3F || skySeen[0] == 0U || skySeen[1] == 0U || skySeen[2] == 0U) { return 75; }
 	renderer.shutdown();
 	errors += renderer.validationErrorCount();
 	std::println("[RadianceCascadeRendererTests] intervals hits={},{} misses={},{} mismatches={},{} skipped={},{} atlas_view emission={} background={}",
 		intervalHits[0], intervalHits[1], intervalMisses[0], intervalMisses[1], intervalMismatches[0], intervalMismatches[1],
 		intervalSkipped[0], intervalSkipped[1], emissionPixels, backgroundPixels);
+	std::println("[RadianceCascadeRendererTests] merge max_error={} sky max_error={} cascade0_sky all={} none={} part={}",
+		mergeError, skyError, skySeen[0], skySeen[1], skySeen[2]);
 
 	std::println("[RadianceCascadeRendererTests] wrong_pixels={} resize_requested={} extent={}x{} resized_wrong_pixels={} validation_active={} validation_errors={}",
 		wrong, resized, extent.width, extent.height, resized_wrong, validation, errors);

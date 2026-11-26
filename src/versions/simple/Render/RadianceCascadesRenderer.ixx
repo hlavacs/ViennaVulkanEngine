@@ -28,8 +28,9 @@ import VVEngine.Simple.RenderResources;
 /// (layer = z), acceleration structures over the bound RenderScene, and a frame that traces one camera ray per pixel
 /// (material colour or a voxel debug view, no lighting) into the HDR output image and blits it to the swapchain.
 /// The probe volume is the voxel volume; one RGBA16F atlas per cascade is created with the scene, and every frame
-/// traces each cascade's intervals into it (voxel emission at hits, transparency 1 for misses).
-/// Without traceable geometry the frame is the background colour. The inject and merge stages are empty.
+/// traces each cascade's intervals into it (voxel emission at hits, transparency 1 for misses; the last cascade's
+/// rays reach the sky, the background colour), then merges the cascades from the last to the first in place.
+/// Without traceable geometry the frame is the background colour. The inject stage is empty.
 
 export namespace vve::simple {
 
@@ -49,7 +50,8 @@ export namespace vve::simple {
 	enum class RadianceCascadesView {
 		shaded,       ///< The rendered image (currently the material base colour).
 		voxel_albedo, ///< Albedo of the voxel at each hit point; magenta marks a hit in an empty voxel.
-		cascade_atlas, ///< One layer of one cascade atlas (setDebugAtlas): radiance where the interval hit, else the background.
+		cascade_atlas, ///< One layer of one cascade atlas (setDebugAtlas) as the frame left it, merged unless setMerging(false):
+		               ///< radiance where the transparency is below one half, else the background.
 	};
 
 	/// @brief Voxelized scene: a regular grid whose voxel (0, 0, 0) has its minimum corner at origin.
@@ -111,6 +113,8 @@ export namespace vve::simple {
 		auto setView(RadianceCascadesView view) -> void;
 		[[nodiscard]] RadianceCascadesView view() const noexcept;
 		auto setDebugAtlas(std::uint32_t cascade, std::uint32_t layer) -> void;
+		auto setMerging(bool merging) -> void;
+		[[nodiscard]] bool merging() const noexcept;
 		[[nodiscard]] std::array<std::uint32_t, 3> voxelGrid() const noexcept;
 		[[nodiscard]] Vec3 probeVolumeExtent() const noexcept;
 		[[nodiscard]] std::array<std::uint32_t, 3> cascadeAtlasSize(std::uint32_t cascade) const noexcept;
@@ -147,7 +151,8 @@ export namespace vve::simple {
 		void writeDescriptors();
 		[[nodiscard]] auto drawFrame(VulkanReadback *readback) -> std::expected<bool, Error>;
 		void recordFrame(VkCommandBuffer command, std::uint32_t imageIndex);
-		void pushFrameConstants(VkCommandBuffer command, Vec4 stage);
+		void pushFrameConstants(VkCommandBuffer command, Vec4 stage, bool sky);
+		void bindSets(VkCommandBuffer command, std::uint32_t nearCascade, std::uint32_t farCascade);
 		void record(VkCommandBuffer command);
 		void recordInject(VkCommandBuffer command);
 		void recordTrace(VkCommandBuffer command, std::uint32_t cascade);
@@ -174,10 +179,10 @@ export namespace vve::simple {
 		VkDescriptorSetLayout cascade_set_layout_{VK_NULL_HANDLE};	///< Set 1: the atlas of one cascade.
 		VulkanDescriptorPool cascade_pool_{};							///< Owns cascade_sets_.
 		std::vector<VkDescriptorSet> cascade_sets_{};				///< One set 1 per cascade; written while the atlases exist.
-		VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};			///< set_layout_, cascade_set_layout_ and the frame push constants.
-		VkPipeline pipeline_{VK_NULL_HANDLE};							///< Ray tracing pipeline of the primary and the cascade rays.
+		VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};			///< set_layout_, cascade_set_layout_ twice (near and far cascade) and the frame push constants.
+		VkPipeline pipeline_{VK_NULL_HANDLE};							///< Ray tracing pipeline of the primary rays, the cascade rays and the merge.
 		VulkanBuffer shader_table_{};									///< Shader binding table: ray generation, miss and hit group handles.
-		std::array<VkStridedDeviceAddressRegionKHR, 4> shader_regions_{}; ///< Primary ray generation, cascade ray generation, miss and hit regions; miss and hit hold primary then cascade.
+		std::array<VkStridedDeviceAddressRegionKHR, 5> shader_regions_{}; ///< Primary, cascade and merge ray generation, then miss and hit regions; miss and hit hold primary then cascade.
 		const RenderScene *scene_{nullptr};							///< Borrowed CPU scene; read only by rebuildScene and init.
 		std::vector<VulkanBuffer> scene_buffers_{};					///< Vertex, index, structure storage and instance buffers of the scene.
 		std::vector<VkAccelerationStructureKHR> bottom_levels_{};	///< One structure per RenderScene mesh; null for meshes without triangles.
@@ -189,6 +194,7 @@ export namespace vve::simple {
 		std::array<std::uint32_t, 3> voxel_grid_{};						///< RadianceCascadesVoxels::size of the uploaded volume.
 		RadianceCascadesView view_{RadianceCascadesView::shaded};		///< What the primary rays show.
 		std::array<std::uint32_t, 2> debug_atlas_{};					///< Cascade and layer of the atlas view; clamped when recorded.
+		bool merging_{true};											///< Whether frames merge the cascades; off leaves the raw intervals in the atlases.
 		std::size_t traced_instances_{};								///< Instances inside top_level_.
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< View of the primary rays; the default matches the forward renderer.
@@ -306,11 +312,6 @@ export namespace vve::simple {
 		// TODO: ray generation shader, one shadow ray per voxel and light.
 	}
 
-	/// @brief Merges cascade + 1 into cascade: L = L_near + transparency_near * L_far (paper equation 11).
-	inline void RadianceCascadesRenderer::recordMerge(VkCommandBuffer, std::uint32_t) {
-		// TODO: compute shader; trilinear probe interpolation, average of the child directions.
-	}
-
 	/// @brief Convenience execution alias for renderFrame.
 	/// @return Result of renderFrame().
 	inline auto RadianceCascadesRenderer::execute() -> std::expected<void, Error> {
@@ -349,6 +350,12 @@ export namespace vve::simple {
 
 	/// @brief Selects the cascade and layer the atlas view shows; values past the last are clamped when a frame is recorded.
 	inline auto RadianceCascadesRenderer::setDebugAtlas(std::uint32_t cascade, std::uint32_t layer) -> void { debug_atlas_ = {cascade, layer}; }
+
+	/// @brief Turns the merge on (the default) or off; off is a debug mode that leaves each atlas with its raw intervals.
+	inline auto RadianceCascadesRenderer::setMerging(bool merging) -> void { merging_ = merging; }
+
+	/// @brief Reports whether frames merge the cascades.
+	inline bool RadianceCascadesRenderer::merging() const noexcept { return merging_; }
 
 	/// @brief Direction of texel (x, y) of a side x side octahedral map, taken at the texel centre; the map centre is +y.
 	/// Mirrors octahedralDirection in simple_radiance_cascades.slang.

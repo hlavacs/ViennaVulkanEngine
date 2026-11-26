@@ -10,6 +10,7 @@ module;
 #include "simple_rc_cascade_raygen_spv.h"
 #include "simple_rc_cascade_miss_spv.h"
 #include "simple_rc_cascade_closest_hit_spv.h"
+#include "simple_rc_cascade_merge_raygen_spv.h"
 
 module VVEngine.Simple.RadianceCascadesRenderer;
 import std;
@@ -27,7 +28,8 @@ import VVEngine.Simple.RenderResources;
 /// - rebuildScene / buildScene / buildStructure / uploadVoxels / createCascades: voxel volumes, cascade atlases,
 ///   geometry upload, one bottom-level structure per mesh, one top-level structure over the instances, and the
 ///   material buffer.
-/// - renderFrame / drawFrame / recordFrame / recordTrace / recordResolve: acquire, record, submit and present one frame.
+/// - renderFrame / drawFrame / recordFrame / recordTrace / recordMerge / recordResolve: acquire, record, submit and
+///   present one frame.
 /// - captureFrameToPng: renders one more frame and copies its swapchain image into a PNG.
 /// - readCascadeAtlas: copies one cascade atlas back to the CPU as floats.
 ///
@@ -293,8 +295,8 @@ namespace vve::simple {
 		result = vkAllocateDescriptorSets(device_.device, &cascadeSetInfo, cascade_sets_.data());
 		if (result != VK_SUCCESS) { return result; }
 
-		static_assert(VVE_RC_CASCADE_SET == 1);
-		const std::array setLayouts{set_layout_, cascade_set_layout_};
+		static_assert(VVE_RC_CASCADE_SET == 1 && VVE_RC_FAR_CASCADE_SET == 2);
+		const std::array setLayouts{set_layout_, cascade_set_layout_, cascade_set_layout_};
 		const VkPushConstantRange constants{.stageFlags = constantStages, .size = sizeof(FrameConstants)};
 		const VkPipelineLayoutCreateInfo pipelineLayoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 			.setLayoutCount = static_cast<std::uint32_t>(setLayouts.size()), .pSetLayouts = setLayouts.data(), .pushConstantRangeCount = 1U,
@@ -302,11 +304,12 @@ namespace vve::simple {
 		result = vkCreatePipelineLayout(device_.device, &pipelineLayoutInfo, nullptr, &pipeline_layout_);
 		if (result != VK_SUCCESS) { return result; }
 
-		// Stage order is also the shader group order: primary and cascade ray generation, primary and cascade miss,
-		// primary and cascade closest hit. The cascade rays select their miss and hit group with index 1.
-		std::array<VulkanShaderModule, 6> modules{};
-		const std::array<std::span<const std::uint32_t>, 6> code{simple_rc_primary_raygen_spv, simple_rc_cascade_raygen_spv,
-			simple_rc_primary_miss_spv, simple_rc_cascade_miss_spv, simple_rc_primary_closest_hit_spv, simple_rc_cascade_closest_hit_spv};
+		// Stage order is also the shader group order: primary, cascade and merge ray generation, primary and cascade
+		// miss, primary and cascade closest hit. The cascade rays select their miss and hit group with index 1.
+		std::array<VulkanShaderModule, 7> modules{};
+		const std::array<std::span<const std::uint32_t>, 7> code{simple_rc_primary_raygen_spv, simple_rc_cascade_raygen_spv,
+			simple_rc_cascade_merge_raygen_spv, simple_rc_primary_miss_spv, simple_rc_cascade_miss_spv, simple_rc_primary_closest_hit_spv,
+			simple_rc_cascade_closest_hit_spv};
 		for (std::size_t index{}; index < modules.size() && result == VK_SUCCESS; ++index) { result = modules[index].create(device_.device, code[index]); }
 		if (result != VK_SUCCESS) { return result; }
 		const auto stage = [&modules](std::size_t index, VkShaderStageFlagBits bit, const char *entry) {
@@ -314,16 +317,17 @@ namespace vve::simple {
 				.module = modules[index].shaderModule, .pName = entry};
 		};
 		const std::array stages{stage(0U, VK_SHADER_STAGE_RAYGEN_BIT_KHR, "primaryRaygen"), stage(1U, VK_SHADER_STAGE_RAYGEN_BIT_KHR, "cascadeRaygen"),
-			stage(2U, VK_SHADER_STAGE_MISS_BIT_KHR, "primaryMiss"), stage(3U, VK_SHADER_STAGE_MISS_BIT_KHR, "cascadeMiss"),
-			stage(4U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "primaryClosestHit"), stage(5U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "cascadeClosestHit")};
+			stage(2U, VK_SHADER_STAGE_RAYGEN_BIT_KHR, "cascadeMergeRaygen"), stage(3U, VK_SHADER_STAGE_MISS_BIT_KHR, "primaryMiss"),
+			stage(4U, VK_SHADER_STAGE_MISS_BIT_KHR, "cascadeMiss"), stage(5U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "primaryClosestHit"),
+			stage(6U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "cascadeClosestHit")};
 		const auto group = [](VkRayTracingShaderGroupTypeKHR type, std::uint32_t general, std::uint32_t closestHit) {
 			return VkRayTracingShaderGroupCreateInfoKHR{.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, .type = type,
 				.generalShader = general, .closestHitShader = closestHit, .anyHitShader = VK_SHADER_UNUSED_KHR, .intersectionShader = VK_SHADER_UNUSED_KHR};
 		};
 		const auto general = [&group](std::uint32_t shader) { return group(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, shader, VK_SHADER_UNUSED_KHR); };
 		const auto hit = [&group](std::uint32_t shader) { return group(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, shader); };
-		const std::array groups{general(0U), general(1U), general(2U), general(3U), hit(4U), hit(5U)};
-		constexpr std::array<std::uint32_t, 4> regionGroups{1U, 1U, 2U, 2U}; // Groups per shader_regions_ entry, in group order.
+		const std::array groups{general(0U), general(1U), general(2U), general(3U), general(4U), hit(5U), hit(6U)};
+		constexpr std::array<std::uint32_t, 5> regionGroups{1U, 1U, 1U, 2U, 2U}; // Groups per shader_regions_ entry, in group order.
 		const VkRayTracingPipelineCreateInfoKHR pipelineInfo{
 			.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
 			.stageCount = static_cast<std::uint32_t>(stages.size()),
@@ -852,8 +856,9 @@ namespace vve::simple {
 		return true;
 	}
 
-	/// @brief Pushes the frame constants (camera, background, voxel volume, view) with the given stage parameters.
-	void RadianceCascadesRenderer::pushFrameConstants(VkCommandBuffer command, Vec4 stage) {
+	/// @brief Pushes the frame constants (camera, background, voxel volume, view) with the given stage parameters;
+	/// sky marks the trace of the last cascade, whose misses see the background colour.
+	void RadianceCascadesRenderer::pushFrameConstants(VkCommandBuffer command, Vec4 stage, bool sky) {
 		// Camera basis: the image plane sits one unit in front of the camera.
 		const Vec3 forward{normalize(camera_.forward.value)};
 		const bool vertical{std::abs(forward.y) > static_cast<Scalar>(0.999)};
@@ -866,7 +871,7 @@ namespace vve::simple {
 			.right = Vec4{scale(right, halfHeight * aspect), zero()},
 			.up = Vec4{scale(up, halfHeight), zero()},
 			.forward = Vec4{forward, zero()},
-			.background = Vec4{background_color_.value, one()},
+			.background = Vec4{background_color_.value, sky ? one() : zero()},
 			.volume = Vec4{voxel_origin_, voxel_size_},
 			.grid = Vec4{static_cast<Scalar>(voxel_grid_[0]), static_cast<Scalar>(voxel_grid_[1]), static_cast<Scalar>(voxel_grid_[2]),
 				static_cast<Scalar>(std::to_underlying(view_))},
@@ -875,38 +880,63 @@ namespace vve::simple {
 		vkCmdPushConstants(command, pipeline_layout_, constantStages, 0U, sizeof(constants), &constants);
 	}
 
+	/// @brief Binds the pipeline, set 0 and the near and far cascade sets. Every dispatch of the shared pipeline binds
+	/// all three, since each counts every set the pipeline uses; stages that read one cascade pass it twice.
+	void RadianceCascadesRenderer::bindSets(VkCommandBuffer command, std::uint32_t nearCascade, std::uint32_t farCascade) {
+		const std::array sets{descriptor_set_, cascade_sets_[nearCascade], cascade_sets_[farCascade]};
+		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
+		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, static_cast<std::uint32_t>(sets.size()), sets.data(), 0U, nullptr);
+	}
+
 	/// @brief Traces the interval of every probe direction of one cascade into its atlas: one ray per atlas texel.
+	/// The last cascade's rays continue to the sky distance of the primary rays, and their misses see the sky.
 	void RadianceCascadesRenderer::recordTrace(VkCommandBuffer command, std::uint32_t cascade) {
+		constexpr Scalar skyDistance{static_cast<Scalar>(10000)}; // Matches the primary rays' TMax.
 		const auto &dispatch = *device_.device.handle.getDispatcher();
 		const auto &atlas = cascades_[cascade];
+		const bool last{cascade + 1U == settings_.cascade_count};
 		// The previous frame's stages may still read or write the atlas.
 		memoryBarrier(command, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
 			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT);
-		const std::array sets{descriptor_set_, cascade_sets_[cascade]};
-		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
-		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, static_cast<std::uint32_t>(sets.size()), sets.data(), 0U, nullptr);
-		pushFrameConstants(command, Vec4{probeSpacing(cascade), intervalStart(cascade), intervalEnd(cascade), static_cast<Scalar>(directionSide(cascade))});
+		bindSets(command, cascade, cascade);
+		pushFrameConstants(command, Vec4{probeSpacing(cascade), intervalStart(cascade), last ? skyDistance : intervalEnd(cascade),
+			static_cast<Scalar>(directionSide(cascade))}, last);
 		const VkStridedDeviceAddressRegionKHR callable{};
-		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[1], &shader_regions_[2], &shader_regions_[3], &callable,
+		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[1], &shader_regions_[3], &shader_regions_[4], &callable,
 			atlas.extent.width, atlas.extent.height, atlas.layerCount);
 		// Later stages of this frame read the atlas.
 		memoryBarrier(command, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT,
 			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 	}
 
+	/// @brief Merges cascade + 1, already merged, into cascade in place (paper equation 11): one merge invocation per
+	/// texel of cascade, no rays. Does nothing while merging is off.
+	void RadianceCascadesRenderer::recordMerge(VkCommandBuffer command, std::uint32_t cascade) {
+		if (!merging_) { return; }
+		const auto &dispatch = *device_.device.handle.getDispatcher();
+		const auto &atlas = cascades_[cascade];
+		bindSets(command, cascade, cascade + 1U);
+		pushFrameConstants(command, Vec4{probeSpacing(cascade), probeSpacing(cascade + 1U), static_cast<Scalar>(directionSide(cascade)),
+			static_cast<Scalar>(directionSide(cascade + 1U))}, false);
+		const VkStridedDeviceAddressRegionKHR callable{};
+		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[2], &shader_regions_[3], &shader_regions_[4], &callable,
+			atlas.extent.width, atlas.extent.height, atlas.layerCount);
+		// The next merge reads this cascade, the resolve may show it.
+		memoryBarrier(command, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+	}
+
 	/// @brief Traces one camera ray per pixel into the output image, which it leaves in the general layout.
 	/// The hit currently returns the material colour; the irradiance of the merged cascade 0 is added in a later step.
-	/// Set 1 is always bound, since the atlas view reads the selected cascade's atlas.
+	/// The atlas view reads the selected cascade's atlas through set 1.
 	void RadianceCascadesRenderer::recordResolve(VkCommandBuffer command) {
 		const auto &dispatch = *device_.device.handle.getDispatcher();
 		const std::uint32_t cascade{std::min<std::uint32_t>(debug_atlas_[0], static_cast<std::uint32_t>(cascades_.size()) - 1U)};
 		const std::uint32_t layer{std::min(debug_atlas_[1], cascades_[cascade].layerCount - 1U)};
-		const std::array sets{descriptor_set_, cascade_sets_[cascade]};
-		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
-		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, static_cast<std::uint32_t>(sets.size()), sets.data(), 0U, nullptr);
-		pushFrameConstants(command, Vec4{static_cast<Scalar>(layer), zero(), zero(), zero()});
+		bindSets(command, cascade, cascade);
+		pushFrameConstants(command, Vec4{static_cast<Scalar>(layer), zero(), zero(), zero()}, false);
 		const VkStridedDeviceAddressRegionKHR callable{};
-		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[0], &shader_regions_[2], &shader_regions_[3], &callable,
+		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[0], &shader_regions_[3], &shader_regions_[4], &callable,
 			swapchain_.extent.width, swapchain_.extent.height, 1U);
 	}
 
