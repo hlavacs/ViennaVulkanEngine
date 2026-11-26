@@ -308,12 +308,12 @@ int main() {
 	};
 	// L = L_near + T_near * L_far, T = T_near * T_far; far interpolates the 8 surrounding next-cascade probes
 	// trilinearly (clamped to the far grid) and averages the scale x scale child directions of the texel.
-	const auto referenceMerge = [&renderer](std::uint32_t cascade, const std::vector<Vec4> &near, const std::vector<Vec4> &far) {
+	const auto referenceMerge = [&renderer](std::uint32_t cascade, const std::vector<Vec4> &nearAtlas, const std::vector<Vec4> &farAtlas) {
 		const auto size = renderer.cascadeAtlasSize(cascade), farSize = renderer.cascadeAtlasSize(cascade + 1U);
 		const std::uint32_t side = renderer.directionSide(cascade), farSide = renderer.directionSide(cascade + 1U), scale = farSide / side;
 		const float ratio = renderer.probeSpacing(cascade) / renderer.probeSpacing(cascade + 1U);
 		const std::array<int, 3> farCount{static_cast<int>(farSize[0] / farSide), static_cast<int>(farSize[1] / farSide), static_cast<int>(farSize[2])};
-		auto result = std::vector<Vec4>(near.size());
+		auto result = std::vector<Vec4>(nearAtlas.size());
 		for (std::uint32_t layer{}; layer < size[2]; ++layer) {
 			for (std::uint32_t y{}; y < size[1]; ++y) {
 				for (std::uint32_t x{}; x < size[0]; ++x) {
@@ -332,13 +332,13 @@ int main() {
 						for (std::uint32_t k{}; k < scale; ++k) {
 							for (std::uint32_t l{}; l < scale; ++l) {
 								const std::size_t fx{probe[0] * farSide + (x % side) * scale + k}, fy{probe[1] * farSide + (y % side) * scale + l};
-								const Vec4 value = far[fx + std::size_t{farSize[0]} * (fy + std::size_t{farSize[1]} * probe[2])];
+								const Vec4 value = farAtlas[fx + std::size_t{farSize[0]} * (fy + std::size_t{farSize[1]} * probe[2])];
 								for (int channel{}; channel < 4; ++channel) { sum[static_cast<std::size_t>(channel)] += weight * value[channel]; }
 							}
 						}
 					}
 					const std::size_t index{x + std::size_t{size[0]} * (y + std::size_t{size[1]} * layer)};
-					const Vec4 n = near[index];
+					const Vec4 n = nearAtlas[index];
 					const float count = static_cast<float>(scale * scale);
 					result[index] = Vec4{n.x + n.w * sum[0] / count, n.y + n.w * sum[1] / count, n.z + n.w * sum[2] / count, n.w * sum[3] / count};
 				}

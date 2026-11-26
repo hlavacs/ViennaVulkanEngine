@@ -50,10 +50,11 @@ namespace vve::simple {
 			Vec4 right{};      ///< Camera right, scaled by tan(fov / 2) * aspect.
 			Vec4 up{};         ///< Camera up, scaled by tan(fov / 2).
 			Vec4 forward{};    ///< Normalized view direction.
-			Vec4 background{}; ///< Linear colour of rays that hit nothing.
+			Vec4 background{}; ///< Linear colour of rays that hit nothing (rgb); w is 1 while tracing the last cascade, whose misses see it as sky.
 			Vec4 volume{};     ///< Voxel volume origin (xyz) and voxel size (w).
 			Vec4 grid{};       ///< Voxels per axis (xyz) and the RadianceCascadesView (w).
-			Vec4 stage{};      ///< Cascade trace: probe spacing, interval start, interval end, direction side. Atlas view: layer (x).
+			Vec4 stage{};      ///< Cascade trace: probe spacing, interval start, interval end, direction side. Merge: near and far
+			                   ///< probe spacing, near and far direction side. Atlas view: layer (x).
 		};
 		static_assert(sizeof(FrameConstants) <= 128U); // The guaranteed minimum of maxPushConstantsSize.
 		constexpr VkShaderStageFlags constantStages{VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR};
