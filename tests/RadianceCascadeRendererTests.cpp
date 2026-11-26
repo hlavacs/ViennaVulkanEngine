@@ -183,6 +183,7 @@ int main() {
 	}
 	if (renderer.cascadeAtlasSize(renderer.settings().cascade_count) != std::array{0U, 0U, 0U}) { return 56; }
 	const auto scene_capture = directory / "scene.png";
+	renderer.setView(RadianceCascadesView::base_color); // Unlit material colours; 11 checks the shading.
 	if (!renderer.renderFrame() || !renderer.captureFrameToPng(scene_capture)) { return 34; }
 	const auto scene_pixels = test::imagePixels(scene_capture);
 	if (!scene_pixels || scene_pixels->size() != std::size_t{extent.width} * extent.height * 4U) { return 35; }
@@ -386,6 +387,61 @@ int main() {
 		}
 	}
 	if (skyError > 2e-3F || skySeen[0] == 0U || skySeen[1] == 0U || skySeen[2] == 0U) { return 75; }
+
+	// 11. Shading. 11a: the grey floor (albedo 0.5) under the sky, seen from above. Its probes in front lie above it and
+	// see the sky over the upper hemisphere, so the shaded colour is albedo * sky * factor, where factor is the discrete
+	// cosine sum of cascade 0's upward directions (4 pi / N each, divided by pi). The merge interpolates from probes
+	// under the floor too, which may block part of the sky, so the colour must keep the sky's hue and lie between
+	// half and all of that value.
+	const auto srgbToLinear = [](unsigned char value) {
+		const float encoded = static_cast<float>(value) / 255.0F;
+		return encoded <= 0.04045F ? encoded / 12.92F : std::pow((encoded + 0.055F) / 1.055F, 2.4F);
+	};
+	const auto centreColour = [&](const std::filesystem::path &path) -> std::optional<std::array<float, 3>> {
+		const auto image = test::imagePixels(path);
+		if (!image || image->size() != std::size_t{extent.width} * extent.height * 4U) { return std::nullopt; }
+		const std::size_t offset{(std::size_t{extent.height / 2U} * extent.width + extent.width / 2U) * 4U};
+		return std::array{srgbToLinear((*image)[offset]), srgbToLinear((*image)[offset + 1U]), srgbToLinear((*image)[offset + 2U])};
+	};
+	const std::uint32_t side0 = renderer.directionSide(0U);
+	float factor{};
+	for (std::uint32_t y{}; y < side0; ++y) {
+		for (std::uint32_t x{}; x < side0; ++x) { factor += std::max(0.0F, RadianceCascadesRenderer::octahedralDirection(x, y, side0).y); }
+	}
+	factor *= 4.0F / static_cast<float>(side0 * side0);
+	renderer.setCamera(Camera::lookAt(Position{{0.0F, 3.0F, 1.0F}}, Position{{0.0F, 0.1F, 0.0F}}));
+	const auto floor_capture = directory / "floor.png";
+	if (!renderer.captureFrameToPng(floor_capture)) { return 76; }
+	const auto floorColour = centreColour(floor_capture);
+	if (!floorColour) { return 77; }
+	bool floor_ok{std::abs((*floorColour)[0] / (*floorColour)[2] - 0.2F) < 0.03F && std::abs((*floorColour)[1] / (*floorColour)[2] - 0.5F) < 0.05F};
+	for (std::size_t channel{}; channel < 3U; ++channel) {
+		const float ratio = (*floorColour)[channel] / (0.5F * sky[channel] * factor);
+		floor_ok = floor_ok && ratio > 0.5F && ratio < 1.05F;
+	}
+	if (!floor_ok) { return 78; }
+
+	// 11b. Emitted light only (black sky): a floor point under an emissive panel is lit by it, a point 2.5 m away
+	// much less. The panel hangs 0.6 m above x = -1; both points are seen at the same grazing angle from below it.
+	RenderScene lit{}; // Outlives every use by the renderer, which is shut down below.
+	const auto floorMaterial = lit.addMaterial(RenderMaterial{.base_color = {.value = {0.5F, 0.5F, 0.5F}}});
+	const auto panelMaterial = lit.addMaterial(RenderMaterial{.base_color = {.value = {0.0F, 0.0F, 0.0F}}, .emissive = {.value = {2.0F, 1.0F, 0.5F}}});
+	(void)lit.addInstance(lit.addPlaneMesh(Vec2{2.0F, 2.0F}), floorMaterial, {}, identityMat4());
+	(void)lit.addInstance(lit.addPlaneMesh(Vec2{0.3F, 0.3F}), panelMaterial, {}, math::translate(identityMat4(), Vec3{-1.0F, 0.6F, 0.0F}));
+	renderer.bindRenderScene(lit);
+	renderer.setBackgroundColor(LinearColor{.value = Vec3{0.0F, 0.0F, 0.0F}});
+	if (!renderer.rebuildScene()) { return 79; }
+	renderer.setCamera(Camera::lookAt(Position{{1.0F, 0.4F, 0.0F}}, Position{{-1.0F, 0.0F, 0.0F}}));
+	const auto near_capture = directory / "panel_near.png";
+	if (!renderer.captureFrameToPng(near_capture)) { return 80; }
+	renderer.setCamera(Camera::lookAt(Position{{3.5F, 0.4F, 0.0F}}, Position{{1.5F, 0.0F, 0.0F}}));
+	const auto far_capture = directory / "panel_far.png";
+	if (!renderer.captureFrameToPng(far_capture)) { return 81; }
+	const auto nearColour = centreColour(near_capture), farColour = centreColour(far_capture);
+	if (!nearColour || !farColour) { return 82; }
+	const bool panel_ok = (*nearColour)[0] > 0.01F && (*nearColour)[0] > 4.0F * (*farColour)[0] && (*nearColour)[0] > (*nearColour)[1] &&
+		(*nearColour)[1] > (*nearColour)[2];
+	if (!panel_ok) { return 83; }
 	renderer.shutdown();
 	errors += renderer.validationErrorCount();
 	std::println("[RadianceCascadeRendererTests] intervals hits={},{} misses={},{} mismatches={},{} skipped={},{} atlas_view emission={} background={}",
@@ -393,6 +449,9 @@ int main() {
 		intervalSkipped[0], intervalSkipped[1], emissionPixels, backgroundPixels);
 	std::println("[RadianceCascadeRendererTests] merge max_error={} sky max_error={} cascade0_sky all={} none={} part={}",
 		mergeError, skyError, skySeen[0], skySeen[1], skySeen[2]);
+	std::println("[RadianceCascadeRendererTests] shading floor={},{},{} expected={},{},{} panel_near={},{},{} panel_far={},{},{}",
+		(*floorColour)[0], (*floorColour)[1], (*floorColour)[2], 0.5F * sky[0] * factor, 0.5F * sky[1] * factor, 0.5F * sky[2] * factor,
+		(*nearColour)[0], (*nearColour)[1], (*nearColour)[2], (*farColour)[0], (*farColour)[1], (*farColour)[2]);
 
 	std::println("[RadianceCascadeRendererTests] wrong_pixels={} resize_requested={} extent={}x{} resized_wrong_pixels={} validation_active={} validation_errors={}",
 		wrong, resized, extent.width, extent.height, resized_wrong, validation, errors);

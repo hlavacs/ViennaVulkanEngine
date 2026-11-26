@@ -54,7 +54,7 @@ namespace vve::simple {
 			Vec4 volume{};     ///< Voxel volume origin (xyz) and voxel size (w).
 			Vec4 grid{};       ///< Voxels per axis (xyz) and the RadianceCascadesView (w).
 			Vec4 stage{};      ///< Cascade trace: probe spacing, interval start, interval end, direction side. Merge: near and far
-			                   ///< probe spacing, near and far direction side. Atlas view: layer (x).
+			                   ///< probe spacing, near and far direction side. Resolve: atlas view layer, cascade 0 probe spacing and direction side.
 		};
 		static_assert(sizeof(FrameConstants) <= 128U); // The guaranteed minimum of maxPushConstantsSize.
 		constexpr VkShaderStageFlags constantStages{VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR};
@@ -282,7 +282,7 @@ namespace vve::simple {
 
 		// Set 1: one set per cascade, so each trace binds its own atlas; the settings cannot change after init.
 		const std::array cascadeBindings{VkDescriptorSetLayoutBinding{.binding = VVE_RC_ATLAS_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-			.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR}};
+			.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR}}; // The shaded hit gathers from cascade 0.
 		const VkDescriptorSetLayoutCreateInfo cascadeLayoutInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 			.bindingCount = static_cast<std::uint32_t>(cascadeBindings.size()), .pBindings = cascadeBindings.data()};
 		result = vkCreateDescriptorSetLayout(device_.device, &cascadeLayoutInfo, nullptr, &cascade_set_layout_);
@@ -928,14 +928,15 @@ namespace vve::simple {
 	}
 
 	/// @brief Traces one camera ray per pixel into the output image, which it leaves in the general layout.
-	/// The hit currently returns the material colour; the irradiance of the merged cascade 0 is added in a later step.
-	/// The atlas view reads the selected cascade's atlas through set 1.
+	/// Set 1 is merged cascade 0, which the shaded view gathers its irradiance from, or in the atlas view the selected
+	/// cascade.
 	void RadianceCascadesRenderer::recordResolve(VkCommandBuffer command) {
 		const auto &dispatch = *device_.device.handle.getDispatcher();
-		const std::uint32_t cascade{std::min<std::uint32_t>(debug_atlas_[0], static_cast<std::uint32_t>(cascades_.size()) - 1U)};
-		const std::uint32_t layer{std::min(debug_atlas_[1], cascades_[cascade].layerCount - 1U)};
+		const std::uint32_t debugCascade{std::min<std::uint32_t>(debug_atlas_[0], static_cast<std::uint32_t>(cascades_.size()) - 1U)};
+		const std::uint32_t layer{std::min(debug_atlas_[1], cascades_[debugCascade].layerCount - 1U)};
+		const std::uint32_t cascade{view_ == RadianceCascadesView::cascade_atlas ? debugCascade : 0U};
 		bindSets(command, cascade, cascade);
-		pushFrameConstants(command, Vec4{static_cast<Scalar>(layer), zero(), zero(), zero()}, false);
+		pushFrameConstants(command, Vec4{static_cast<Scalar>(layer), probeSpacing(0U), static_cast<Scalar>(directionSide(0U)), zero()}, false);
 		const VkStridedDeviceAddressRegionKHR callable{};
 		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[0], &shader_regions_[3], &shader_regions_[4], &callable,
 			swapchain_.extent.width, swapchain_.extent.height, 1U);

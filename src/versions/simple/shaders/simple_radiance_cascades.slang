@@ -3,7 +3,8 @@
 ///
 /// Functional objects:
 /// - RcFrame, RcMaterial, RcPayload, RcIntervalPayload: push constants, one material row, and the ray payloads.
-/// - primaryRaygen, primaryMiss, primaryClosestHit: one camera ray per pixel; a hit returns the material colour or,
+/// - primaryRaygen, primaryMiss, primaryClosestHit, cascadeIrradiance: one camera ray per pixel; a hit returns the
+///   emission plus the albedo-weighted irradiance from merged cascade 0, the material base colour or,
 ///   in the voxel view, the albedo of the voxel at the hit point; a miss returns the background colour. The atlas
 ///   view shows one layer of a cascade atlas instead of tracing.
 /// - octahedralDirection: direction of an octahedral map coordinate; RadianceCascadesRenderer::octahedralDirection mirrors it.
@@ -24,9 +25,9 @@ struct RcFrame {
 	float4 forward;    ///< Normalized view direction.
 	float4 background; ///< Linear colour of rays that hit nothing (rgb); w is 1 while tracing the last cascade, whose misses see it as sky.
 	float4 volume;     ///< Voxel volume origin (xyz) and voxel size (w).
-	float4 grid;       ///< Voxels per axis (xyz) and the RadianceCascadesView (w): 0 shaded, 1 voxel albedo, 2 cascade atlas.
+	float4 grid;       ///< Voxels per axis (xyz) and the RadianceCascadesView (w): 0 shaded, 1 voxel albedo, 2 cascade atlas, 3 base colour.
 	float4 stage;      ///< Cascade trace: probe spacing, interval start, interval end, direction side. Merge: near and far
-	                   ///< probe spacing, near and far direction side. Atlas view: layer (x).
+	                   ///< probe spacing, near and far direction side. Resolve: atlas view layer, cascade 0 probe spacing and direction side.
 };
 
 /// @brief One row of the material buffer; the instance custom index selects it.
@@ -111,17 +112,67 @@ void primaryMiss(inout RcPayload payload) {
 	payload.radiance = rcFrame.background.rgb;
 }
 
-/// @brief Returns the base colour of the hit instance's material, or the voxel albedo in the voxel view.
-/// The voxelizer marks every voxel a triangle touches, so the unmodified hit point always lies in a marked voxel;
-/// magenta therefore reveals a voxelization bug.
+/// @brief Irradiance at a surface point from the bound (merged cascade 0) atlas: the trilinear blend of the 8
+/// surrounding probes, each summing L(d) * max(0, n . d) over its directions with equal solid angles 4 pi / N.
+/// Probes behind the surface (on the far side of its tangent plane) are left out and the remaining weights
+/// renormalized, so a floor does not average in probes below it; when all are behind, all are used.
+float3 cascadeIrradiance(float3 position, float3 normal) {
+	const float spacing = rcFrame.stage.y;
+	const uint side = uint(rcFrame.stage.z);
+	uint width, height, layers;
+	rcAtlas.GetDimensions(width, height, layers);
+	const int3 count = int3(int(width / side), int(height / side), int(layers));
+	const float3 cell = (position - rcFrame.volume.xyz) / spacing;
+	const int3 base = int3(floor(cell));
+	const float3 fraction = cell - float3(base);
+	float3 front = float3(0.0, 0.0, 0.0), all = float3(0.0, 0.0, 0.0);
+	float frontWeight = 0.0, allWeight = 0.0;
+	for (uint corner = 0; corner < 8; ++corner) {
+		const int3 offset = int3(int(corner & 1), int((corner >> 1) & 1), int((corner >> 2) & 1));
+		const float3 weights = float3(offset) * fraction + float3(1 - offset) * (1.0 - fraction);
+		const float weight = weights.x * weights.y * weights.z;
+		if (weight == 0.0) { continue; }
+		const uint3 probe = uint3(clamp(base + offset, int3(0, 0, 0), count - 1));
+		float3 irradiance = float3(0.0, 0.0, 0.0);
+		for (uint y = 0; y < side; ++y) {
+			for (uint x = 0; x < side; ++x) {
+				const float cosine = dot(normal, octahedralDirection((float2(x, y) + 0.5) / float(side) * 2.0 - 1.0));
+				if (cosine > 0.0) { irradiance += cosine * rcAtlas[uint3(probe.xy * side + uint2(x, y), probe.z)].rgb; }
+			}
+		}
+		all += weight * irradiance;
+		allWeight += weight;
+		if (dot(rcFrame.volume.xyz + float3(probe) * spacing - position, normal) >= 0.0) {
+			front += weight * irradiance;
+			frontWeight += weight;
+		}
+	}
+	const float3 blended = frontWeight > 0.0 ? front / frontWeight : all / max(allWeight, 1e-6);
+	return blended * (4.0 * 3.14159265 / float(side * side));
+}
+
+/// @brief Shaded view: emission plus the Lambertian reflection of the cascade 0 irradiance, albedo / pi * E. The
+/// normal is the voxel's average face normal turned towards the ray (or the reversed ray where the normals cancel).
+/// Base colour view: the material base colour. Voxel view: the albedo of the voxel at the hit point; the voxelizer
+/// marks every voxel a triangle touches, so the unmodified hit point always lies in a marked voxel and magenta
+/// reveals a voxelization bug.
 [shader("closesthit")]
 void primaryClosestHit(inout RcPayload payload, in BuiltInTriangleIntersectionAttributes attributes) {
+	const float3 hit = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
+	const RcMaterial material = rcMaterials[InstanceID()];
 	if (rcFrame.grid.w == 1.0) {
-		const float4 albedo = rcVoxelAlbedo.Load(voxelAt(WorldRayOrigin() + WorldRayDirection() * RayTCurrent()));
+		const float4 albedo = rcVoxelAlbedo.Load(voxelAt(hit));
 		payload.radiance = albedo.a > 0.5 ? albedo.rgb : float3(1.0, 0.0, 1.0);
 		return;
 	}
-	payload.radiance = rcMaterials[InstanceID()].baseColor.rgb;
+	if (rcFrame.grid.w == 3.0) {
+		payload.radiance = material.baseColor.rgb;
+		return;
+	}
+	float3 normal = rcVoxelNormal.Load(voxelAt(hit)).xyz;
+	if (dot(normal, normal) < 0.5) { normal = -WorldRayDirection(); }
+	else if (dot(normal, WorldRayDirection()) > 0.0) { normal = -normal; }
+	payload.radiance = material.emissive.rgb + material.baseColor.rgb / 3.14159265 * cascadeIrradiance(hit, normal);
 }
 
 /// @brief Traces one interval ray per atlas texel of the bound cascade. Texel (x, y, layer) belongs to probe

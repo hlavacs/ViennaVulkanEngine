@@ -26,7 +26,8 @@ import VVEngine.Simple.RenderResources;
 ///
 /// Implemented so far: settings, layout, device bring-up, CPU voxelization uploaded as RGBA32F 2D array images
 /// (layer = z), acceleration structures over the bound RenderScene, and a frame that traces one camera ray per pixel
-/// (material colour or a voxel debug view, no lighting) into the HDR output image and blits it to the swapchain.
+/// into the HDR output image and blits it to the swapchain. A hit is shaded with the irradiance of merged cascade 0
+/// (see RadianceCascadesView::shaded); the other views are debug views.
 /// The probe volume is the voxel volume; one RGBA16F atlas per cascade is created with the scene, and every frame
 /// traces each cascade's intervals into it (voxel emission at hits, transparency 1 for misses; the last cascade's
 /// rays reach the sky, the background colour), then merges the cascades from the last to the first in place.
@@ -48,10 +49,11 @@ export namespace vve::simple {
 
 	/// @brief What the primary rays show.
 	enum class RadianceCascadesView {
-		shaded,       ///< The rendered image (currently the material base colour).
+		shaded,       ///< The rendered image: emission plus albedo / pi times the irradiance of merged cascade 0.
 		voxel_albedo, ///< Albedo of the voxel at each hit point; magenta marks a hit in an empty voxel.
 		cascade_atlas, ///< One layer of one cascade atlas (setDebugAtlas) as the frame left it, merged unless setMerging(false):
 		               ///< radiance where the transparency is below one half, else the background.
+		base_color,    ///< Material base colour at each hit, without lighting.
 	};
 
 	/// @brief Voxelized scene: a regular grid whose voxel (0, 0, 0) has its minimum corner at origin.
