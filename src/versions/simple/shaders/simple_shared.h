@@ -39,3 +39,5 @@
 #define VVE_RC_VOXEL_ALBEDO_BINDING 3 ///< Radiance cascades renderer: voxel albedo volume, alpha = occupancy.
 #define VVE_RC_VOXEL_EMISSIVE_BINDING 4 ///< Radiance cascades renderer: voxel emitted radiance volume.
 #define VVE_RC_VOXEL_NORMAL_BINDING 5 ///< Radiance cascades renderer: voxel average face normal volume.
+#define VVE_RC_CASCADE_SET 1 ///< Radiance cascades renderer: descriptor set of one cascade, one set per cascade.
+#define VVE_RC_ATLAS_BINDING 0 ///< Radiance cascades renderer: the cascade's atlas storage image (set VVE_RC_CASCADE_SET).

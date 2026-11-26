@@ -216,11 +216,83 @@ int main() {
 	renderer.shutdown();
 	errors += renderer.validationErrorCount();
 
+	// 9. Interval tracing: a 1.8 m emissive square at y = 0.1 in its own scene. The voxel volume is 10 x 3 x 10 voxels
+	// from (-1.25, -0.25, -1.25), so no probe lies in the plane. Every texel of cascades 0 and 1 must hold the plane's
+	// emission with transparency 0 when its interval crosses the plane, else no radiance with transparency 1. Rays
+	// within a millimetre of an interval end or the square's edge are ambiguous and skipped.
+	RenderScene traced{}; // Outlives every use by the renderer, which is shut down below.
+	const auto glow = traced.addMaterial(RenderMaterial{.base_color = {.value = {0.9F, 0.1F, 0.1F}}, .emissive = {.value = {0.2F, 0.4F, 0.6F}}});
+	(void)traced.addInstance(traced.addPlaneMesh(Vec2{0.9F, 0.9F}), glow, {}, math::translate(identityMat4(), Vec3{0.0F, 0.1F, 0.0F}));
+	renderer.bindRenderScene(traced);
+	if (!renderer.init(window) || renderer.tracedInstanceCount() != 1U || !renderer.renderFrame()) { return 60; }
+	const Vec3 tracedVolume = renderer.probeVolumeExtent();
+	if (tracedVolume.x != 2.5F || tracedVolume.y != 0.75F || tracedVolume.z != 2.5F) { return 61; }
+	constexpr float planeY{0.1F}, planeHalf{0.9F}, ambiguity{1e-3F};
+	const Vec3 probeOrigin{-1.25F, -0.25F, -1.25F};
+	std::array<std::size_t, 2> intervalHits{}, intervalMisses{}, intervalMismatches{}, intervalSkipped{};
+	for (std::uint32_t cascade{}; cascade < 2U; ++cascade) {
+		const auto atlas = renderer.readCascadeAtlas(cascade);
+		const auto size = renderer.cascadeAtlasSize(cascade);
+		if (!atlas || atlas->size() != std::size_t{size[0]} * size[1] * size[2]) { return 62; }
+		const std::uint32_t side = renderer.directionSide(cascade);
+		const float spacing = renderer.probeSpacing(cascade), start = renderer.intervalStart(cascade), end = renderer.intervalEnd(cascade);
+		for (std::uint32_t layer{}; layer < size[2]; ++layer) {
+			for (std::uint32_t y{}; y < size[1]; ++y) {
+				for (std::uint32_t x{}; x < size[0]; ++x) {
+					const Vec3 probe{probeOrigin.x + static_cast<float>(x / side) * spacing, probeOrigin.y + static_cast<float>(y / side) * spacing,
+						probeOrigin.z + static_cast<float>(layer) * spacing};
+					const Vec3 direction = RadianceCascadesRenderer::octahedralDirection(x % side, y % side, side);
+					bool hit{false};
+					if (direction.y != 0.0F) { // A horizontal ray never reaches the plane.
+						const float t = (planeY - probe.y) / direction.y;
+						const float hx = std::abs(probe.x + t * direction.x), hz = std::abs(probe.z + t * direction.z);
+						if (t > 0.0F && (std::abs(t - start) < ambiguity || std::abs(t - end) < ambiguity ||
+							std::abs(hx - planeHalf) < ambiguity || std::abs(hz - planeHalf) < ambiguity)) {
+							++intervalSkipped[cascade];
+							continue;
+						}
+						hit = t >= start && t <= end && hx < planeHalf && hz < planeHalf;
+					}
+					const Vec4 expected = hit ? Vec4{0.2F, 0.4F, 0.6F, 0.0F} : Vec4{0.0F, 0.0F, 0.0F, 1.0F};
+					const Vec4 actual = (*atlas)[x + std::size_t{size[0]} * (y + std::size_t{size[1]} * layer)];
+					bool matches{true};
+					for (int channel{}; channel < 4; ++channel) { matches = matches && std::abs(actual[channel] - expected[channel]) < 1e-3F; }
+					++(hit ? intervalHits : intervalMisses)[cascade];
+					intervalMismatches[cascade] += !matches;
+				}
+			}
+		}
+		const std::size_t checked = intervalHits[cascade] + intervalMisses[cascade];
+		if (intervalHits[cascade] == 0U || intervalMisses[cascade] == 0U || intervalSkipped[cascade] * 100U > checked) { return 63; }
+	}
+	const auto badAtlas = renderer.readCascadeAtlas(renderer.settings().cascade_count);
+	if (badAtlas || badAtlas.error() != Error::invalid_argument) { return 64; }
+
+	// 9b. Atlas view of cascade 0, probe layer 2 (z = -0.25): every pixel shows either the emission (sRGB 124, 170, 203)
+	// or the background (124, 188, 255), and both occur.
+	renderer.setView(RadianceCascadesView::cascade_atlas);
+	renderer.setDebugAtlas(0U, 2U);
+	const auto atlas_capture = directory / "atlas.png";
+	if (!renderer.captureFrameToPng(atlas_capture)) { return 65; }
+	renderer.setView(RadianceCascadesView::shaded);
+	const auto atlas_pixels = test::imagePixels(atlas_capture);
+	if (!atlas_pixels || atlas_pixels->size() != std::size_t{extent.width} * extent.height * 4U) { return 66; }
+	const std::size_t atlasPixelCount = atlas_pixels->size() / 4U;
+	const std::size_t backgroundPixels = atlasPixelCount - wrongPixels(*atlas_pixels, {124, 188, 255, 255});
+	const std::size_t emissionPixels = atlasPixelCount - wrongPixels(*atlas_pixels, {124, 170, 203, 255});
+	if (backgroundPixels == 0U || emissionPixels == 0U || backgroundPixels + emissionPixels != atlasPixelCount) { return 67; }
+	renderer.shutdown();
+	errors += renderer.validationErrorCount();
+	std::println("[RadianceCascadeRendererTests] intervals hits={},{} misses={},{} mismatches={},{} skipped={},{} atlas_view emission={} background={}",
+		intervalHits[0], intervalHits[1], intervalMisses[0], intervalMisses[1], intervalMismatches[0], intervalMismatches[1],
+		intervalSkipped[0], intervalSkipped[1], emissionPixels, backgroundPixels);
+
 	std::println("[RadianceCascadeRendererTests] wrong_pixels={} resize_requested={} extent={}x{} resized_wrong_pixels={} validation_active={} validation_errors={}",
 		wrong, resized, extent.width, extent.height, resized_wrong, validation, errors);
 	std::println("[RadianceCascadeRendererTests] scene centre={},{},{} bottom={},{},{} corner={},{},{} scene_ok={}",
 		centre[0], centre[1], centre[2], bottom[0], bottom[1], bottom[2], corner[0], corner[1], corner[2], scene_ok);
 	std::println("[RadianceCascadeRendererTests] voxel_view magenta_pixels={} red_green_mixtures={} other_differences={}",
 		magenta, voxel_differences - unexplained_differences, unexplained_differences);
-	return wrong == 0U && resized_wrong == 0U && scene_ok && magenta == 0U && unexplained_differences == 0U && errors == 0U ? 0 : 30;
+	const bool intervals_ok = intervalMismatches[0] == 0U && intervalMismatches[1] == 0U;
+	return wrong == 0U && resized_wrong == 0U && scene_ok && magenta == 0U && unexplained_differences == 0U && intervals_ok && errors == 0U ? 0 : 30;
 }

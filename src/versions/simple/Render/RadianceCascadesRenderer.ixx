@@ -27,8 +27,9 @@ import VVEngine.Simple.RenderResources;
 /// Implemented so far: settings, layout, device bring-up, CPU voxelization uploaded as RGBA32F 2D array images
 /// (layer = z), acceleration structures over the bound RenderScene, and a frame that traces one camera ray per pixel
 /// (material colour or a voxel debug view, no lighting) into the HDR output image and blits it to the swapchain.
-/// The probe volume is the voxel volume; one RGBA16F atlas per cascade is created with the scene.
-/// Without traceable geometry the frame is the background colour. The cascade stages are empty.
+/// The probe volume is the voxel volume; one RGBA16F atlas per cascade is created with the scene, and every frame
+/// traces each cascade's intervals into it (voxel emission at hits, transparency 1 for misses).
+/// Without traceable geometry the frame is the background colour. The inject and merge stages are empty.
 
 export namespace vve::simple {
 
@@ -48,6 +49,7 @@ export namespace vve::simple {
 	enum class RadianceCascadesView {
 		shaded,       ///< The rendered image (currently the material base colour).
 		voxel_albedo, ///< Albedo of the voxel at each hit point; magenta marks a hit in an empty voxel.
+		cascade_atlas, ///< One layer of one cascade atlas (setDebugAtlas): radiance where the interval hit, else the background.
 	};
 
 	/// @brief Voxelized scene: a regular grid whose voxel (0, 0, 0) has its minimum corner at origin.
@@ -86,6 +88,7 @@ export namespace vve::simple {
 		[[nodiscard]] Scalar intervalStart(std::uint32_t cascade) const;
 		[[nodiscard]] Scalar intervalEnd(std::uint32_t cascade) const;
 		[[nodiscard]] bool atlasesFit(Vec3 volumeExtent, std::uint32_t maxDimension, std::uint32_t maxLayers) const;
+		[[nodiscard]] static Vec3 octahedralDirection(std::uint32_t x, std::uint32_t y, std::uint32_t side);
 
 		// Voxelization (RadianceCascadesRenderer.cpp); pure CPU, so tests need no GPU.
 		static constexpr std::uint32_t maxVoxelsPerAxis{2048U};		///< Guaranteed minimum of maxImageArrayLayers; also below maxImageDimension2D.
@@ -107,6 +110,7 @@ export namespace vve::simple {
 		[[nodiscard]] const Camera &camera() const noexcept;
 		auto setView(RadianceCascadesView view) -> void;
 		[[nodiscard]] RadianceCascadesView view() const noexcept;
+		auto setDebugAtlas(std::uint32_t cascade, std::uint32_t layer) -> void;
 		[[nodiscard]] std::array<std::uint32_t, 3> voxelGrid() const noexcept;
 		[[nodiscard]] Vec3 probeVolumeExtent() const noexcept;
 		[[nodiscard]] std::array<std::uint32_t, 3> cascadeAtlasSize(std::uint32_t cascade) const noexcept;
@@ -121,6 +125,7 @@ export namespace vve::simple {
 
 		// Diagnostics.
 		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error>;
+		[[nodiscard]] auto readCascadeAtlas(std::uint32_t cascade) -> std::expected<std::vector<Vec4>, Error>;
 		[[nodiscard]] VkExtent2D extent() const noexcept;
 		[[nodiscard]] bool validationActive() const;
 		[[nodiscard]] std::uint64_t validationErrorCount() const;
@@ -142,6 +147,7 @@ export namespace vve::simple {
 		void writeDescriptors();
 		[[nodiscard]] auto drawFrame(VulkanReadback *readback) -> std::expected<bool, Error>;
 		void recordFrame(VkCommandBuffer command, std::uint32_t imageIndex);
+		void pushFrameConstants(VkCommandBuffer command, Vec4 stage);
 		void record(VkCommandBuffer command);
 		void recordInject(VkCommandBuffer command);
 		void recordTrace(VkCommandBuffer command, std::uint32_t cascade);
@@ -164,11 +170,14 @@ export namespace vve::simple {
 		VulkanFrameSync frame_sync_{};									///< Fences and semaphores of the frame slots.
 		VkDescriptorSetLayout set_layout_{VK_NULL_HANDLE};			///< Scene structure, output image and materials.
 		VulkanDescriptorPool descriptor_pool_{};						///< Owns descriptor_set_.
-		VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};			///< The one set every stage binds.
-		VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};			///< set_layout_ plus the frame push constants.
-		VkPipeline pipeline_{VK_NULL_HANDLE};							///< Ray tracing pipeline of the primary rays.
+		VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};			///< The one set 0 every stage binds.
+		VkDescriptorSetLayout cascade_set_layout_{VK_NULL_HANDLE};	///< Set 1: the atlas of one cascade.
+		VulkanDescriptorPool cascade_pool_{};							///< Owns cascade_sets_.
+		std::vector<VkDescriptorSet> cascade_sets_{};				///< One set 1 per cascade; written while the atlases exist.
+		VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};			///< set_layout_, cascade_set_layout_ and the frame push constants.
+		VkPipeline pipeline_{VK_NULL_HANDLE};							///< Ray tracing pipeline of the primary and the cascade rays.
 		VulkanBuffer shader_table_{};									///< Shader binding table: ray generation, miss and hit group handles.
-		std::array<VkStridedDeviceAddressRegionKHR, 3> shader_regions_{}; ///< Ray generation, miss and hit regions inside shader_table_.
+		std::array<VkStridedDeviceAddressRegionKHR, 4> shader_regions_{}; ///< Primary ray generation, cascade ray generation, miss and hit regions; miss and hit hold primary then cascade.
 		const RenderScene *scene_{nullptr};							///< Borrowed CPU scene; read only by rebuildScene and init.
 		std::vector<VulkanBuffer> scene_buffers_{};					///< Vertex, index, structure storage and instance buffers of the scene.
 		std::vector<VkAccelerationStructureKHR> bottom_levels_{};	///< One structure per RenderScene mesh; null for meshes without triangles.
@@ -179,6 +188,7 @@ export namespace vve::simple {
 		Scalar voxel_size_{};											///< RadianceCascadesVoxels::voxel_size of the uploaded volume.
 		std::array<std::uint32_t, 3> voxel_grid_{};						///< RadianceCascadesVoxels::size of the uploaded volume.
 		RadianceCascadesView view_{RadianceCascadesView::shaded};		///< What the primary rays show.
+		std::array<std::uint32_t, 2> debug_atlas_{};					///< Cascade and layer of the atlas view; clamped when recorded.
 		std::size_t traced_instances_{};								///< Instances inside top_level_.
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< View of the primary rays; the default matches the forward renderer.
@@ -296,11 +306,6 @@ export namespace vve::simple {
 		// TODO: ray generation shader, one shadow ray per voxel and light.
 	}
 
-	/// @brief Traces the ray interval of every probe direction of one cascade into its atlas.
-	inline void RadianceCascadesRenderer::recordTrace(VkCommandBuffer, std::uint32_t) {
-		// TODO: ray generation shader over the atlas; closest hit reads voxel radiance, miss returns transparency 1.
-	}
-
 	/// @brief Merges cascade + 1 into cascade: L = L_near + transparency_near * L_far (paper equation 11).
 	inline void RadianceCascadesRenderer::recordMerge(VkCommandBuffer, std::uint32_t) {
 		// TODO: compute shader; trilinear probe interpolation, average of the child directions.
@@ -341,6 +346,26 @@ export namespace vve::simple {
 
 	/// @brief Returns what the primary rays show.
 	inline RadianceCascadesView RadianceCascadesRenderer::view() const noexcept { return view_; }
+
+	/// @brief Selects the cascade and layer the atlas view shows; values past the last are clamped when a frame is recorded.
+	inline auto RadianceCascadesRenderer::setDebugAtlas(std::uint32_t cascade, std::uint32_t layer) -> void { debug_atlas_ = {cascade, layer}; }
+
+	/// @brief Direction of texel (x, y) of a side x side octahedral map, taken at the texel centre; the map centre is +y.
+	/// Mirrors octahedralDirection in simple_radiance_cascades.slang.
+	inline Vec3 RadianceCascadesRenderer::octahedralDirection(std::uint32_t x, std::uint32_t y, std::uint32_t side) {
+		const auto coordinate = [side](std::uint32_t texel) {
+			return (static_cast<Scalar>(texel) + static_cast<Scalar>(0.5)) / static_cast<Scalar>(side) * static_cast<Scalar>(2) - one();
+		};
+		const Scalar ex{coordinate(x)}, ez{coordinate(y)};
+		Vec3 v{ex, one() - std::abs(ex) - std::abs(ez), ez};
+		if (v.y < zero()) {
+			const Scalar folded_x{(one() - std::abs(v.z)) * (v.x >= zero() ? one() : -one())};
+			const Scalar folded_z{(one() - std::abs(v.x)) * (v.z >= zero() ? one() : -one())};
+			v.x = folded_x;
+			v.z = folded_z;
+		}
+		return normalize(v);
+	}
 
 	/// @brief Voxels per axis of the uploaded volume; zero without a scene or before init.
 	inline std::array<std::uint32_t, 3> RadianceCascadesRenderer::voxelGrid() const noexcept { return voxel_grid_; }

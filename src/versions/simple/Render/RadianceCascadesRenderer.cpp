@@ -7,6 +7,9 @@ module;
 #include "simple_rc_primary_raygen_spv.h"
 #include "simple_rc_primary_miss_spv.h"
 #include "simple_rc_primary_closest_hit_spv.h"
+#include "simple_rc_cascade_raygen_spv.h"
+#include "simple_rc_cascade_miss_spv.h"
+#include "simple_rc_cascade_closest_hit_spv.h"
 
 module VVEngine.Simple.RadianceCascadesRenderer;
 import std;
@@ -19,13 +22,14 @@ import VVEngine.Simple.RenderResources;
 ///
 /// Functional objects:
 /// - init / cleanup: own Vulkan instance, ray tracing device, allocator, swapchain and frame synchronization.
-/// - createPipeline: descriptor set, ray tracing pipeline and shader binding table of the primary rays.
+/// - createPipeline: descriptor sets, ray tracing pipeline and shader binding table of the primary and cascade rays.
 /// - voxelize / triangleTouchesBox: CPU voxelization of the traced instances.
 /// - rebuildScene / buildScene / buildStructure / uploadVoxels / createCascades: voxel volumes, cascade atlases,
 ///   geometry upload, one bottom-level structure per mesh, one top-level structure over the instances, and the
 ///   material buffer.
-/// - renderFrame / drawFrame / recordFrame / recordResolve: acquire, record, submit and present one frame.
+/// - renderFrame / drawFrame / recordFrame / recordTrace / recordResolve: acquire, record, submit and present one frame.
 /// - captureFrameToPng: renders one more frame and copies its swapchain image into a PNG.
+/// - readCascadeAtlas: copies one cascade atlas back to the CPU as floats.
 ///
 /// The ray tracing commands are extension functions the Vulkan loader does not export; they are called through the
 /// dispatch table of the device's vk::raii owner.
@@ -47,7 +51,9 @@ namespace vve::simple {
 			Vec4 background{}; ///< Linear colour of rays that hit nothing.
 			Vec4 volume{};     ///< Voxel volume origin (xyz) and voxel size (w).
 			Vec4 grid{};       ///< Voxels per axis (xyz) and the RadianceCascadesView (w).
+			Vec4 stage{};      ///< Cascade trace: probe spacing, interval start, interval end, direction side. Atlas view: layer (x).
 		};
+		static_assert(sizeof(FrameConstants) <= 128U); // The guaranteed minimum of maxPushConstantsSize.
 		constexpr VkShaderStageFlags constantStages{VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR};
 
 		/// @brief Conservative triangle-box overlap by the separating axis test (Akenine-Moeller); touching counts as overlap.
@@ -93,6 +99,24 @@ namespace vve::simple {
 				.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U},
 			};
 			vkCmdPipelineBarrier(command, sourceStage, targetStage, 0U, 0U, nullptr, 0U, nullptr, 1U, &barrier);
+		}
+
+		/// @brief Global memory dependency, for the cascade atlases that stay in the general layout.
+		void memoryBarrier(VkCommandBuffer command, VkPipelineStageFlags sourceStage, VkAccessFlags sourceAccess, VkPipelineStageFlags targetStage,
+			VkAccessFlags targetAccess) {
+			const VkMemoryBarrier barrier{.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER, .srcAccessMask = sourceAccess, .dstAccessMask = targetAccess};
+			vkCmdPipelineBarrier(command, sourceStage, targetStage, 0U, 1U, &barrier, 0U, nullptr, 0U, nullptr);
+		}
+
+		/// @brief Converts an IEEE 754 half to float, including subnormals, infinities and NaN.
+		[[nodiscard]] float halfToFloat(std::uint16_t half) {
+			const int exponent{(half >> 10U) & 0x1F};
+			const int mantissa{half & 0x3FF};
+			float magnitude{};
+			if (exponent == 0) { magnitude = std::ldexp(static_cast<float>(mantissa), -24); }
+			else if (exponent == 31) { magnitude = mantissa == 0 ? std::numeric_limits<float>::infinity() : std::numeric_limits<float>::quiet_NaN(); }
+			else { magnitude = std::ldexp(static_cast<float>(mantissa + 1024), exponent - 25); }
+			return (half & 0x8000U) != 0U ? -magnitude : magnitude;
 		}
 
 		/// @brief Logs the failed stage with its Vulkan result and maps it to the engine error.
@@ -159,11 +183,15 @@ namespace vve::simple {
 			vkDestroyPipelineLayout(device_.device, pipeline_layout_, nullptr);
 			descriptor_pool_.cleanup(); // Frees descriptor_set_.
 			vkDestroyDescriptorSetLayout(device_.device, set_layout_, nullptr);
+			cascade_pool_.cleanup(); // Frees cascade_sets_.
+			vkDestroyDescriptorSetLayout(device_.device, cascade_set_layout_, nullptr);
 		}
 		pipeline_ = VK_NULL_HANDLE;
 		pipeline_layout_ = VK_NULL_HANDLE;
 		descriptor_set_ = VK_NULL_HANDLE;
 		set_layout_ = VK_NULL_HANDLE;
+		cascade_sets_.clear();
+		cascade_set_layout_ = VK_NULL_HANDLE;
 		frame_sync_.cleanup();
 		output_.cleanup();
 		swapchain_.cleanup();
@@ -249,31 +277,53 @@ namespace vve::simple {
 		result = vkAllocateDescriptorSets(device_.device, &setInfo, &descriptor_set_);
 		if (result != VK_SUCCESS) { return result; }
 
+		// Set 1: one set per cascade, so each trace binds its own atlas; the settings cannot change after init.
+		const std::array cascadeBindings{VkDescriptorSetLayoutBinding{.binding = VVE_RC_ATLAS_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+			.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR}};
+		const VkDescriptorSetLayoutCreateInfo cascadeLayoutInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = static_cast<std::uint32_t>(cascadeBindings.size()), .pBindings = cascadeBindings.data()};
+		result = vkCreateDescriptorSetLayout(device_.device, &cascadeLayoutInfo, nullptr, &cascade_set_layout_);
+		if (result == VK_SUCCESS) { result = cascade_pool_.create(device_.device, settings_.cascade_count, cascadeBindings); }
+		if (result != VK_SUCCESS) { return result; }
+		const auto cascadeLayouts = std::vector<VkDescriptorSetLayout>(settings_.cascade_count, cascade_set_layout_);
+		const VkDescriptorPool cascadePool{cascade_pool_.descriptorPool};
+		const VkDescriptorSetAllocateInfo cascadeSetInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, .descriptorPool = cascadePool,
+			.descriptorSetCount = settings_.cascade_count, .pSetLayouts = cascadeLayouts.data()};
+		cascade_sets_.assign(settings_.cascade_count, VK_NULL_HANDLE);
+		result = vkAllocateDescriptorSets(device_.device, &cascadeSetInfo, cascade_sets_.data());
+		if (result != VK_SUCCESS) { return result; }
+
+		static_assert(VVE_RC_CASCADE_SET == 1);
+		const std::array setLayouts{set_layout_, cascade_set_layout_};
 		const VkPushConstantRange constants{.stageFlags = constantStages, .size = sizeof(FrameConstants)};
-		const VkPipelineLayoutCreateInfo pipelineLayoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, .setLayoutCount = 1U,
-			.pSetLayouts = &set_layout_, .pushConstantRangeCount = 1U, .pPushConstantRanges = &constants};
+		const VkPipelineLayoutCreateInfo pipelineLayoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.setLayoutCount = static_cast<std::uint32_t>(setLayouts.size()), .pSetLayouts = setLayouts.data(), .pushConstantRangeCount = 1U,
+			.pPushConstantRanges = &constants};
 		result = vkCreatePipelineLayout(device_.device, &pipelineLayoutInfo, nullptr, &pipeline_layout_);
 		if (result != VK_SUCCESS) { return result; }
 
-		// Stage order is also the shader group order: ray generation, miss, closest hit.
-		std::array<VulkanShaderModule, 3> modules{};
-		result = modules[0].create(device_.device, simple_rc_primary_raygen_spv);
-		if (result == VK_SUCCESS) { result = modules[1].create(device_.device, simple_rc_primary_miss_spv); }
-		if (result == VK_SUCCESS) { result = modules[2].create(device_.device, simple_rc_primary_closest_hit_spv); }
+		// Stage order is also the shader group order: primary and cascade ray generation, primary and cascade miss,
+		// primary and cascade closest hit. The cascade rays select their miss and hit group with index 1.
+		std::array<VulkanShaderModule, 6> modules{};
+		const std::array<std::span<const std::uint32_t>, 6> code{simple_rc_primary_raygen_spv, simple_rc_cascade_raygen_spv,
+			simple_rc_primary_miss_spv, simple_rc_cascade_miss_spv, simple_rc_primary_closest_hit_spv, simple_rc_cascade_closest_hit_spv};
+		for (std::size_t index{}; index < modules.size() && result == VK_SUCCESS; ++index) { result = modules[index].create(device_.device, code[index]); }
 		if (result != VK_SUCCESS) { return result; }
 		const auto stage = [&modules](std::size_t index, VkShaderStageFlagBits bit, const char *entry) {
 			return VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = bit,
 				.module = modules[index].shaderModule, .pName = entry};
 		};
-		const std::array stages{stage(0U, VK_SHADER_STAGE_RAYGEN_BIT_KHR, "primaryRaygen"), stage(1U, VK_SHADER_STAGE_MISS_BIT_KHR, "primaryMiss"),
-			stage(2U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "primaryClosestHit")};
+		const std::array stages{stage(0U, VK_SHADER_STAGE_RAYGEN_BIT_KHR, "primaryRaygen"), stage(1U, VK_SHADER_STAGE_RAYGEN_BIT_KHR, "cascadeRaygen"),
+			stage(2U, VK_SHADER_STAGE_MISS_BIT_KHR, "primaryMiss"), stage(3U, VK_SHADER_STAGE_MISS_BIT_KHR, "cascadeMiss"),
+			stage(4U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "primaryClosestHit"), stage(5U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "cascadeClosestHit")};
 		const auto group = [](VkRayTracingShaderGroupTypeKHR type, std::uint32_t general, std::uint32_t closestHit) {
 			return VkRayTracingShaderGroupCreateInfoKHR{.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, .type = type,
 				.generalShader = general, .closestHitShader = closestHit, .anyHitShader = VK_SHADER_UNUSED_KHR, .intersectionShader = VK_SHADER_UNUSED_KHR};
 		};
-		const std::array groups{group(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 0U, VK_SHADER_UNUSED_KHR),
-			group(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 1U, VK_SHADER_UNUSED_KHR),
-			group(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, 2U)};
+		const auto general = [&group](std::uint32_t shader) { return group(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, shader, VK_SHADER_UNUSED_KHR); };
+		const auto hit = [&group](std::uint32_t shader) { return group(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, shader); };
+		const std::array groups{general(0U), general(1U), general(2U), general(3U), hit(4U), hit(5U)};
+		constexpr std::array<std::uint32_t, 4> regionGroups{1U, 1U, 2U, 2U}; // Groups per shader_regions_ entry, in group order.
 		const VkRayTracingPipelineCreateInfoKHR pipelineInfo{
 			.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
 			.stageCount = static_cast<std::uint32_t>(stages.size()),
@@ -286,25 +336,34 @@ namespace vve::simple {
 		result = dispatch.vkCreateRayTracingPipelinesKHR(device_.device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1U, &pipelineInfo, nullptr, &pipeline_);
 		if (result != VK_SUCCESS) { return result; }
 
-		// Shader binding table: one aligned region with one handle per group.
+		// Shader binding table: each region starts on the base alignment; records inside a region are one stride apart.
 		VkPhysicalDeviceRayTracingPipelinePropertiesKHR limits{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 		VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &limits};
 		vkGetPhysicalDeviceProperties2(physical_device_.physicalDevice, &properties);
 		const VkDeviceSize handleSize{limits.shaderGroupHandleSize};
 		const VkDeviceSize stride{alignUp(handleSize, limits.shaderGroupHandleAlignment)};
-		const VkDeviceSize regionSize{alignUp(stride, limits.shaderGroupBaseAlignment)};
+		std::array<VkDeviceSize, regionGroups.size()> regionStarts{};
+		VkDeviceSize tableSize{};
+		for (std::size_t region{}; region < regionGroups.size(); ++region) {
+			regionStarts[region] = tableSize;
+			tableSize += alignUp(regionGroups[region] * stride, limits.shaderGroupBaseAlignment);
+		}
 		auto handles = std::vector<std::byte>(groups.size() * handleSize);
 		result = dispatch.vkGetRayTracingShaderGroupHandlesKHR(device_.device, pipeline_, 0U, static_cast<std::uint32_t>(groups.size()), handles.size(), handles.data());
 		if (result != VK_SUCCESS) { return result; }
 		// The buffer's own address has no guaranteed alignment, so reserve one alignment of slack and start at the next boundary.
-		result = shader_table_.create(allocator_, groups.size() * regionSize + limits.shaderGroupBaseAlignment,
+		result = shader_table_.create(allocator_, tableSize + limits.shaderGroupBaseAlignment,
 			VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, BufferMemory::upload);
 		if (result != VK_SUCCESS) { return result; }
 		const VkDeviceAddress address{bufferAddress(device_.device, shader_table_.buffer)};
 		const VkDeviceAddress first{alignUp(address, limits.shaderGroupBaseAlignment)};
-		for (std::size_t index{}; index < groups.size(); ++index) {
-			std::memcpy(static_cast<std::byte *>(shader_table_.mapped) + (first - address) + index * regionSize, handles.data() + index * handleSize, handleSize);
-			shader_regions_[index] = {.deviceAddress = first + index * regionSize, .stride = stride, .size = stride};
+		std::size_t groupIndex{};
+		for (std::size_t region{}; region < regionGroups.size(); ++region) {
+			for (std::uint32_t record{}; record < regionGroups[region]; ++record, ++groupIndex) {
+				std::memcpy(static_cast<std::byte *>(shader_table_.mapped) + (first - address) + regionStarts[region] + record * stride,
+					handles.data() + groupIndex * handleSize, handleSize);
+			}
+			shader_regions_[region] = {.deviceAddress = first + regionStarts[region], .stride = stride, .size = regionGroups[region] * stride};
 		}
 		return VK_SUCCESS;
 	}
@@ -464,17 +523,23 @@ namespace vve::simple {
 	}
 
 	/// @brief Creates one atlas per cascade over the uploaded voxel volume: rgb radiance and alpha transparency of every
-	/// probe direction, written and read as a storage image. Without voxels no atlas is created.
+	/// probe direction, written and read as a storage image and copied out by readCascadeAtlas. The atlases stay in the
+	/// general layout from here on. Without voxels no atlas is created.
 	VkResult RadianceCascadesRenderer::createCascades() {
 		if (voxel_grid_[0] == 0U) { return VK_SUCCESS; }
 		const Vec3 extent{probeVolumeExtent()};
 		cascades_.resize(settings_.cascade_count);
 		for (std::uint32_t cascade{}; cascade < settings_.cascade_count; ++cascade) {
 			const VkResult result = cascades_[cascade].create(allocator_, device_.device, atlasExtent(cascade, extent), cascadeFormat,
-				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, probeCount(cascade, extent)[2], false, true);
+				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+				probeCount(cascade, extent)[2], false, true);
 			if (result != VK_SUCCESS) { return result; }
 		}
-		return VK_SUCCESS;
+		return submitOnce(device_.device, device_.graphicsQueue, command_pool_.commandPool, [this](VkCommandBuffer command) {
+			for (const auto &atlas : cascades_) {
+				transitionImage(command, atlas.image, VK_IMAGE_ASPECT_COLOR_BIT, 0U, atlas.layerCount, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+			}
+		});
 	}
 
 	/// @brief Releases the acceleration structures and every scene buffer; the device must be idle.
@@ -699,6 +764,14 @@ namespace vve::simple {
 		};
 		// Without a top-level structure only the output image is written; with one, the voxel volumes exist too.
 		vkUpdateDescriptorSets(device_.device, top_level_ == VK_NULL_HANDLE ? 1U : static_cast<std::uint32_t>(writes.size()), writes.data(), 0U, nullptr);
+
+		// Each cascade's set points at its atlas; frames only trace while the atlases exist.
+		for (std::size_t cascade{}; cascade < cascades_.size(); ++cascade) {
+			const VkDescriptorImageInfo atlasInfo{.imageView = cascades_[cascade].imageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+			const VkWriteDescriptorSet atlasWrite{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .dstSet = cascade_sets_[cascade],
+				.dstBinding = VVE_RC_ATLAS_BINDING, .descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .pImageInfo = &atlasInfo};
+			vkUpdateDescriptorSets(device_.device, 1U, &atlasWrite, 0U, nullptr);
+		}
 	}
 
 	/// @brief Renders and presents one frame; a temporarily unavailable window or image is a successful skip.
@@ -779,10 +852,8 @@ namespace vve::simple {
 		return true;
 	}
 
-	/// @brief Traces one camera ray per pixel into the output image, which it leaves in the general layout.
-	/// The hit currently returns the material colour; the irradiance of the merged cascade 0 is added in a later step.
-	void RadianceCascadesRenderer::recordResolve(VkCommandBuffer command) {
-		const auto &dispatch = *device_.device.handle.getDispatcher();
+	/// @brief Pushes the frame constants (camera, background, voxel volume, view) with the given stage parameters.
+	void RadianceCascadesRenderer::pushFrameConstants(VkCommandBuffer command, Vec4 stage) {
 		// Camera basis: the image plane sits one unit in front of the camera.
 		const Vec3 forward{normalize(camera_.forward.value)};
 		const bool vertical{std::abs(forward.y) > static_cast<Scalar>(0.999)};
@@ -799,15 +870,43 @@ namespace vve::simple {
 			.volume = Vec4{voxel_origin_, voxel_size_},
 			.grid = Vec4{static_cast<Scalar>(voxel_grid_[0]), static_cast<Scalar>(voxel_grid_[1]), static_cast<Scalar>(voxel_grid_[2]),
 				static_cast<Scalar>(std::to_underlying(view_))},
+			.stage = stage,
 		};
-		// Every pixel is written, so the previous contents are not needed.
-		imageBarrier(command, output_.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0U,
-			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT);
-		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
-		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, 1U, &descriptor_set_, 0U, nullptr);
 		vkCmdPushConstants(command, pipeline_layout_, constantStages, 0U, sizeof(constants), &constants);
+	}
+
+	/// @brief Traces the interval of every probe direction of one cascade into its atlas: one ray per atlas texel.
+	void RadianceCascadesRenderer::recordTrace(VkCommandBuffer command, std::uint32_t cascade) {
+		const auto &dispatch = *device_.device.handle.getDispatcher();
+		const auto &atlas = cascades_[cascade];
+		// The previous frame's stages may still read or write the atlas.
+		memoryBarrier(command, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT);
+		const std::array sets{descriptor_set_, cascade_sets_[cascade]};
+		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
+		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, static_cast<std::uint32_t>(sets.size()), sets.data(), 0U, nullptr);
+		pushFrameConstants(command, Vec4{probeSpacing(cascade), intervalStart(cascade), intervalEnd(cascade), static_cast<Scalar>(directionSide(cascade))});
 		const VkStridedDeviceAddressRegionKHR callable{};
-		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[0], &shader_regions_[1], &shader_regions_[2], &callable,
+		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[1], &shader_regions_[2], &shader_regions_[3], &callable,
+			atlas.extent.width, atlas.extent.height, atlas.layerCount);
+		// Later stages of this frame read the atlas.
+		memoryBarrier(command, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+	}
+
+	/// @brief Traces one camera ray per pixel into the output image, which it leaves in the general layout.
+	/// The hit currently returns the material colour; the irradiance of the merged cascade 0 is added in a later step.
+	/// Set 1 is always bound, since the atlas view reads the selected cascade's atlas.
+	void RadianceCascadesRenderer::recordResolve(VkCommandBuffer command) {
+		const auto &dispatch = *device_.device.handle.getDispatcher();
+		const std::uint32_t cascade{std::min<std::uint32_t>(debug_atlas_[0], static_cast<std::uint32_t>(cascades_.size()) - 1U)};
+		const std::uint32_t layer{std::min(debug_atlas_[1], cascades_[cascade].layerCount - 1U)};
+		const std::array sets{descriptor_set_, cascade_sets_[cascade]};
+		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
+		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, static_cast<std::uint32_t>(sets.size()), sets.data(), 0U, nullptr);
+		pushFrameConstants(command, Vec4{static_cast<Scalar>(layer), zero(), zero(), zero()});
+		const VkStridedDeviceAddressRegionKHR callable{};
+		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[0], &shader_regions_[2], &shader_regions_[3], &callable,
 			swapchain_.extent.width, swapchain_.extent.height, 1U);
 	}
 
@@ -816,7 +915,11 @@ namespace vve::simple {
 	void RadianceCascadesRenderer::recordFrame(VkCommandBuffer command, std::uint32_t imageIndex) {
 		constexpr VkImageAspectFlags colour{VK_IMAGE_ASPECT_COLOR_BIT};
 		const VkImage target{swapchain_.images[imageIndex]};
-		if (top_level_ != VK_NULL_HANDLE) {
+		if (top_level_ != VK_NULL_HANDLE && !cascades_.empty()) {
+			// Every pixel is written, so the previous contents are not needed. The output must be in the general layout
+			// before the first trace: every dispatch of the shared pipeline counts its descriptor as used.
+			imageBarrier(command, output_.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0U,
+				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT);
 			record(command);
 			imageBarrier(command, output_.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT);
@@ -865,6 +968,38 @@ namespace vve::simple {
 			return std::unexpected(Error::io_error);
 		}
 		return {};
+	}
+
+	/// @brief Copies a cascade atlas as written by the last frame into floats: texel (x, y, layer) is element
+	/// x + width * (y + height * layer). Waits for the device first.
+	/// @return Error::not_initialized, Error::invalid_argument for a cascade without an atlas, or Error::platform_error.
+	auto RadianceCascadesRenderer::readCascadeAtlas(std::uint32_t cascade) -> std::expected<std::vector<Vec4>, Error> {
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		if (cascade >= cascades_.size()) { return std::unexpected(Error::invalid_argument); }
+		waitIdle();
+		const auto &atlas = cascades_[cascade];
+		const std::size_t texels{std::size_t{atlas.extent.width} * atlas.extent.height * atlas.layerCount};
+		VulkanBuffer buffer{};
+		VkResult result = buffer.create(allocator_, texels * 4U * sizeof(std::uint16_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT, BufferMemory::readback);
+		if (result == VK_SUCCESS) {
+			result = submitOnce(device_.device, device_.graphicsQueue, command_pool_.commandPool, [&](VkCommandBuffer command) {
+				memoryBarrier(command, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+				const VkBufferImageCopy region{
+					.imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = atlas.layerCount},
+					.imageExtent = {.width = atlas.extent.width, .height = atlas.extent.height, .depth = 1U},
+				};
+				vkCmdCopyImageToBuffer(command, atlas.image, VK_IMAGE_LAYOUT_GENERAL, buffer.buffer, 1U, &region);
+				memoryBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT);
+			});
+		}
+		if (result != VK_SUCCESS) { return fail("atlas readback", result); }
+		const auto halves = std::span{static_cast<const std::uint16_t *>(buffer.mapped), texels * 4U};
+		auto values = std::vector<Vec4>(texels);
+		for (std::size_t texel{}; texel < texels; ++texel) {
+			values[texel] = Vec4{halfToFloat(halves[texel * 4U]), halfToFloat(halves[texel * 4U + 1U]), halfToFloat(halves[texel * 4U + 2U]),
+				halfToFloat(halves[texel * 4U + 3U])};
+		}
+		return values;
 	}
 
 } // namespace vve::simple
