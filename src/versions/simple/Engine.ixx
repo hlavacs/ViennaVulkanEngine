@@ -12,6 +12,7 @@ export import :Graph;
 export import :Window;
 export import :Assets;
 export import :RenderSystem;
+export import VVEngine.Simple.RadianceCascadesRenderer;
 export import :Gui;
 export import :Audio;
 

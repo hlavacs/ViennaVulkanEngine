@@ -15,6 +15,7 @@ import :Window;
 import VVEngine.Simple.Vulkan;
 import VVEngine.Simple.Scene;
 import VVEngine.Simple.Renderer;
+import VVEngine.Simple.RadianceCascadesRenderer;
 export import VVEngine.Simple.RenderResources;
 
 /// @file
@@ -203,6 +204,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto makeGuiInitInfo() const																			-> std::optional<ImGui_ImplVulkan_InitInfo>;
 		[[nodiscard]] auto forward()																								-> ForwardRenderer &;
 		[[nodiscard]] auto forward() const																						-> const ForwardRenderer &;
+		[[nodiscard]] auto radianceCascades()																				-> RadianceCascadesRenderer &;
+		[[nodiscard]] auto radianceCascades() const																		-> const RadianceCascadesRenderer &;
 		auto shutdown()																													-> void;
 		[[nodiscard]] auto initialized() const																					-> bool;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
@@ -274,6 +277,7 @@ export namespace vve::simple {
 
 		RenderScene scene_{};															///< Active CPU render scene.
 		ForwardRenderer renderer_{};													///< Forward renderer backend.
+		RadianceCascadesRenderer radiance_cascades_{};								///< Standalone radiance cascade renderer.
 		ImportedAssetReadAccess imported_assets_{};								///< Borrowed asset-scene queries.
 		const WindowSystem *window_system_{nullptr};							///< Borrowed window owner for camera assignments before lazy renderer initialization.
 		std::map<WindowHandle, Camera> pending_cameras_{};					///< Camera overrides waiting to move into their window targets.
@@ -326,6 +330,12 @@ namespace vve::simple {
 
 	/// @brief Returns the forward renderer backend.
 	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{ return renderer_; }
+
+	/// @brief Returns the standalone radiance cascade renderer.
+	inline auto RenderSystem::radianceCascades()																-> RadianceCascadesRenderer &{ return radiance_cascades_; }
+
+	/// @brief Returns the standalone radiance cascade renderer.
+	inline auto RenderSystem::radianceCascades() const															-> const RadianceCascadesRenderer &{ return radiance_cascades_; }
 
 	/// @brief Sets the clear colour of every window.
 	inline auto RenderSystem::setBackgroundColor(LinearColor color) -> void { renderer_.setBackgroundColor(color); }

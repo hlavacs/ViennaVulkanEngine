@@ -39,6 +39,7 @@ target_sources(ViennaVulkanEngine
          Scene.ixx
          Render/RenderResources.ixx
          Render/Renderer.ixx
+         Render/RadianceCascadesRenderer.ixx
          Render/IrradianceProbes.ixx
          Render/RenderSystem.ixx
 )
