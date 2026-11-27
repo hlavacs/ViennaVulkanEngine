@@ -173,8 +173,7 @@ void rgenMain()
         //maybe splitting between specular and diffuse also works. In that case the diffuse would still have to be devided,
         //by albedo. But indirect has less tendency to be large when albedo is small because indirect is already weighted with throughput 
         //not sure about the math it might actually be garanteed to not be large.
-        float3 lighting = outputColor / max(albedo, 0.001);
-        outImage[int2(launchID)] += float4(lighting, 1.0);    
+        outImage[int2(launchID)] += float4(outputColor, 1.0);    
     }
 }
 

@@ -164,10 +164,7 @@ void rgenMain()
             reservoir = createEmptyReservoir();
         }
 
-        float3 albedo = inAlbedoAlpha[launchID].xyz;
-        float3 lighting = output / max(albedo,0.001);
-
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
-        outImage[launchID] += float4(lighting, 1.0);
+        outImage[launchID] += float4(output, 1.0);
     }
 }

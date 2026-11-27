@@ -44,9 +44,8 @@ void main(uint3 threadId: SV_DispatchThreadID) {
 
     lightingAccumulated = max(min(lightingAccumulated, 100.0), 0.0);
 
-    // put lightAccumulated here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     outAccumulatedLight[launchID] = float4(lightingAccumulated, 1.0);
-    outCombined[launchID] = float4(LinearToSRGB(lightingAccumulated * max(albedo, 0.001)), 1.0);
+    outCombined[launchID] = float4(LinearToSRGB(lightingAccumulated), 1.0);
 
 
     //outCombined[launchID] = float4(albedo.z, albedo.z, albedo.z, 1.0);
