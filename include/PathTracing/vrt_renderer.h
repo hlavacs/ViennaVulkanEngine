@@ -134,7 +134,8 @@ namespace vve {
 		RenderTarget* mainTarget;
 		RenderTarget* depthTarget;
 		RenderTarget* RtTarget;
-		PiplineRaytraced* raytracer;
+		PiplineRaytraced* raytracer_indirect;
+		PiplineRaytraced* raytracer_direct;
 
 		RenderTarget* lightingPreviousTarget;
 		RenderTarget* lightingReprojectedTarget;

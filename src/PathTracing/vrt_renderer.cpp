@@ -44,7 +44,8 @@ namespace vve {
 
         //piplines
         rasterizer->freeResources();
-        raytracer->freeResources();
+        raytracer_direct->freeResources();
+        raytracer_indirect->freeResources();
         InstantRadiosityTesting->freeResources();
         InstantRadiosityNaiveSampling->freeResources();
         vplGenerationRandomReplacment->freeResources();
@@ -644,6 +645,7 @@ namespace vve {
 
         allTargets.push_back(albedoTarget);
         allTargets.push_back(normalTarget);
+        allTargets.push_back(trueNormalTarget);
         allTargets.push_back(specTarget);
         allTargets.push_back(positionTarget);
         allTargets.push_back(depthTarget);
@@ -694,20 +696,33 @@ namespace vve {
         createRtTargetsDescriptors();
 
 
-        raytracer = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, rtTargetsDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_indirect.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
+        raytracer_direct = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, rtTargetsDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_direct.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        raytracer_indirect = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, rtTargetsDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_indirect.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
         
 
-        raytracer->bindRenderTarget(albedoTarget);
-        raytracer->bindRenderTarget(normalTarget);
-        raytracer->bindRenderTarget(trueNormalTarget);
-        raytracer->bindRenderTarget(specTarget);
-        raytracer->bindRenderTarget(positionTarget);
-        raytracer->bindRenderTarget(shadingNormalTarget);
+        raytracer_direct->bindRenderTarget(albedoTarget);
+        raytracer_direct->bindRenderTarget(normalTarget);
+        raytracer_direct->bindRenderTarget(trueNormalTarget);
+        raytracer_direct->bindRenderTarget(specTarget);
+        raytracer_direct->bindRenderTarget(positionTarget);
+        raytracer_direct->bindRenderTarget(shadingNormalTarget);
 
-        raytracer->bindRenderTarget(RtTarget);
+        raytracer_direct->bindRenderTarget(RtTarget);
 
-        raytracer->initRayTracingPipeline();
+        raytracer_direct->initRayTracingPipeline();
+
+
+
+        raytracer_indirect->bindRenderTarget(albedoTarget);
+        raytracer_indirect->bindRenderTarget(normalTarget);
+        raytracer_indirect->bindRenderTarget(trueNormalTarget);
+        raytracer_indirect->bindRenderTarget(specTarget);
+        raytracer_indirect->bindRenderTarget(positionTarget);
+        raytracer_indirect->bindRenderTarget(shadingNormalTarget);
+
+        raytracer_indirect->bindRenderTarget(RtTarget);
+
+        raytracer_indirect->initRayTracingPipeline();
 
         createRestirTemporalDescriptors();
 
@@ -1082,7 +1097,8 @@ namespace vve {
 
         vplGenerationDescriptors->update();
 
-        raytracer->setExtent(swapchain->getExtent());
+        raytracer_direct->setExtent(swapchain->getExtent());
+        raytracer_indirect->setExtent(swapchain->getExtent());
         InstantRadiosityTesting->setExtent(swapchain->getExtent());
         InstantRadiosityNaiveSampling->setExtent(swapchain->getExtent());
         restir_temporal->setExtent(swapchain->getExtent());
@@ -1142,70 +1158,71 @@ namespace vve {
         {
         case vvh::RenderMethode::PATHTRACING:
         {
-            raytracer->recordCommandBuffer(currentFrame);
+            if (m_renderSettings().domain == vvh::IlluminationDomain::COMBINED || m_renderSettings().domain == vvh::IlluminationDomain::DIRECT) {
+                raytracer_direct->recordCommandBuffer(currentFrame);
+            }
+            if (m_renderSettings().domain == vvh::IlluminationDomain::COMBINED || m_renderSettings().domain == vvh::IlluminationDomain::INDIRECT) {
+                raytracer_indirect->recordCommandBuffer(currentFrame);
+            }
             break;
         }
-        /*
-        case  vvh::RenderMethode::RESTIRGI:
-        {
-            restirGI_temporal->recordCommandBuffer(currentFrame);
-            restirGI_spatial->recordCommandBuffer(currentFrame);
-            break;
-        }
-        */
         case  vvh::RenderMethode::RESTIR:
         {
-            restirGI_temporal->recordCommandBuffer(currentFrame);
-            restirGI_spatial->recordCommandBuffer(currentFrame);
+            if (m_renderSettings().domain == vvh::IlluminationDomain::COMBINED || m_renderSettings().domain == vvh::IlluminationDomain::DIRECT) {
+                restir_temporal->recordCommandBuffer(currentFrame);
+                restir_spatial->recordCommandBuffer(currentFrame);
+            }   
+            if (m_renderSettings().domain == vvh::IlluminationDomain::COMBINED || m_renderSettings().domain == vvh::IlluminationDomain::INDIRECT) {
+                restirGI_temporal->recordCommandBuffer(currentFrame);
+                restirGI_spatial->recordCommandBuffer(currentFrame);
+            }
             break;
-            /*
-            restir_temporal->recordCommandBuffer(currentFrame);
-            restir_spatial->recordCommandBuffer(currentFrame);
-            break;
-            */
         }
         case  vvh::RenderMethode::RESTIRIR:
         {
+            if (m_renderSettings().domain == vvh::IlluminationDomain::COMBINED || m_renderSettings().domain == vvh::IlluminationDomain::DIRECT) {
+                restir_temporal->recordCommandBuffer(currentFrame);
+                restir_spatial->recordCommandBuffer(currentFrame);
+            }
+            if (m_renderSettings().domain == vvh::IlluminationDomain::COMBINED || m_renderSettings().domain == vvh::IlluminationDomain::INDIRECT) {
+                mortonCode->recordCommandBuffer(currentFrame);
+
+                histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
+                sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
+
+                histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
+                sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
+
+                histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
+                sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
+
+                histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
+                sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
+
+                pdfEstimation->recordCommandBuffer(currentFrame);
+
+                restir_IR_temporal->recordCommandBuffer(currentFrame);
+                restir_IR_spatial->recordCommandBuffer(currentFrame);
+
+                scoringPixelUsage->recordCommandBuffer(currentFrame);
+
+                histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
+                sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
+
+                histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
+                sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
+
+                histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
+                sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
+
+                histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
+                sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
+
+                limitCalculation->recordCommandBuffer(currentFrame);
+
+                vplGenerationEvolutionaryReplacment->recordCommandBuffer(currentFrame);
+            }
             
-            //this has to be moved after the restir step, meaning first frame is just black
-            //vplGenerationRandomReplacment->recordCommandBuffer(currentFrame);
-            mortonCode->recordCommandBuffer(currentFrame);
-
-            histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
-            sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
-
-            histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
-            sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
-
-            histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
-            sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
-
-            histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
-            sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
-
-            pdfEstimation->recordCommandBuffer(currentFrame);
-
-            restir_IR_temporal->recordCommandBuffer(currentFrame);
-            restir_IR_spatial->recordCommandBuffer(currentFrame);
-
-            scoringPixelUsage->recordCommandBuffer(currentFrame);
-
-            histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
-            sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
-
-            histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
-            sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
-
-            histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
-            sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
-
-            histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
-            sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
-
-            limitCalculation->recordCommandBuffer(currentFrame);
-
-            vplGenerationEvolutionaryReplacment->recordCommandBuffer(currentFrame);
-
             break;
         }
         case vvh::RenderMethode::IRTESTING: 
@@ -1298,6 +1315,8 @@ namespace vve {
 
         swapchain->recordImageTransfer(currentFrame, combinedTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);
+
+        RtTarget->recordClearRenderTarget(currentFrame);
 
         //imgui will queue its command buffer after this
         commandManager->QueueCommandBufferForExecution(currentFrame);

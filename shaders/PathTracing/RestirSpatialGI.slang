@@ -191,6 +191,6 @@ void rgenMain()
         float3 lighting = output / max(albedo,0.001);
 
         storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
-        outImage[launchID] = float4(lighting, 1.0);
+        outImage[launchID] += float4(lighting, 1.0);
     }
 }

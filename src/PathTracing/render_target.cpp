@@ -50,6 +50,10 @@ namespace vve {
 		return clearColor;
 	}
 
+	void RenderTarget::recordClearRenderTarget(int currentFrame) {
+		images[currentFrame]->recordClearImage(currentFrame);
+	}
+
 
 	PerFrameDescriptorPlacment* RenderTarget::getDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
 

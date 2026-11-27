@@ -8,56 +8,6 @@ import ColorSpace;
 import Surface;
 import raytracing;
 
-IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
-    // Inputs: RNG. Output: first-bounce integration state.
-    float2 launchID = (float2)DispatchRaysIndex().xy;        // Current pixel (x,y)
-    float2 launchSize = (float2)DispatchRaysDimensions().xy; // Image size (width,height)
-
-    IntersectionRecord its;
-
-    RayDesc cameraRay = getInitialRay(launchID, launchSize);
-
-    its.position = inPosition[int2(launchID)].xyz;
-    its.normal = inNormal[int2(launchID)].xyz;
-    its.frame = Frame(its.normal);
-    its.direction = cameraRay.Direction;
-
-    MaterialRecord material;
-    material.albedo = inAlbedoAlpha[int2(launchID)].xyz;
-    material.alpha = inAlbedoAlpha[int2(launchID)].w;
-    //Incorrect but not needed
-    material.normal = float3(0.0,0.0,1.0);
-    material.roughness = inSpec[int2(launchID)].x;
-    material.metalness = inSpec[int2(launchID)].y;
-    material.ior = inSpec[int2(launchID)].z;
-
-    float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
-
-    if (dot(its.normal, its.direction) > 0.0) {
-        its.normal *= -1.0;
-        shadingNormal *= -1.0;
-    }
-
-    material.shadingFrame = Frame(shadingNormal);
-
-    float3 directLight = directRaycast(its, material, sampler);
-    
-    BSDFQueryRecord record = constructBSDFRecord(its, material, false);
-
-    float3 bsdf = samplePrincipled(record, material, sampler);
-    // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
-    RayDesc indirectRay = getRay(its, record.woWorld);
-
-    IntegrationStepQueryRecord integrationStep;
-
-    integrationStep.directLight = directLight;
-    integrationStep.indirectLight = float3(0.0);
-    integrationStep.throughput = bsdf;
-    integrationStep.indirectRay = indirectRay;
-
-    return integrationStep;
-}
-
 float3 groundTruthLightRadiance(in uint lightIndex, in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
     LightSource light = lightBuffer[lightIndex];
     EmitterRecord record = sampleLightSource(light, its.position, sampler);
@@ -66,7 +16,7 @@ float3 groundTruthLightRadiance(in uint lightIndex, in IntersectionRecord its, i
 
     if (occluded) {
         return 0.0;
-    }
+    }    
 
     return getUnoccludedLightContribution(its, material, record);
 }
@@ -76,6 +26,7 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     its.position = inPosition[int2(launchID)].xyz;
     its.normal = inNormal[int2(launchID)].xyz;
+    its.trueNormal = inTrueNormal[int2(launchID)].xyz;
     its.frame = Frame(its.normal);
     its.direction = cameraRay.Direction;
 
@@ -90,9 +41,15 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
+    //only invert the true normal!!!!
+    /*
     if (dot(its.normal, its.direction) > 0.0) {
         its.normal *= -1.0;
         shadingNormal *= -1.0;
+    }
+        */
+    if (dot(its.trueNormal, its.direction) > 0.0) {
+        its.trueNormal *= -1.0;
     }
 
     material.shadingFrame = Frame(shadingNormal);
@@ -111,6 +68,7 @@ IntegrationStepQueryRecord integratorDirect(inout Sampler sampler) {
 
     float3 radiance = float3(0.0);
     float pdf = 1.0 / lightCount;
+    uint sampleCount = lightCount;
 
     for(uint i = 0; i < lightCount; i++){
         radiance += (groundTruthLightRadiance(i, its, material, sampler) / pdf);
@@ -118,7 +76,7 @@ IntegrationStepQueryRecord integratorDirect(inout Sampler sampler) {
 
     IntegrationStepQueryRecord integrationStep;
 
-    integrationStep.directLight = radiance / (float)lightCount;
+    integrationStep.directLight = radiance / (float)sampleCount;
     integrationStep.indirectLight = float3(0.0);
     integrationStep.throughput = float3(0.0);
     //integrationStep.indirectRay = indirectRay;
@@ -133,15 +91,18 @@ RWTexture2D<float4> inAlbedoAlpha;
 RWTexture2D<float4> inNormal;
 
 [[vk::binding(2, 2)]]
-RWTexture2D<float4> inSpec;
+RWTexture2D<float4> inTrueNormal;
 
 [[vk::binding(3, 2)]]
-RWTexture2D<float4> inPosition;
+RWTexture2D<float4> inSpec;
 
 [[vk::binding(4, 2)]]
-RWTexture2D<float4> inShadingNormal;
+RWTexture2D<float4> inPosition;
 
 [[vk::binding(5, 2)]]
+RWTexture2D<float4> inShadingNormal;
+
+[[vk::binding(6, 2)]]
 RWTexture2D<float4> outImage;
 
 
@@ -166,13 +127,12 @@ void rgenMain()
 
         Sampler sampler = Sampler(pixelSeed);
 
-        IntegrationStepQueryRecord outputRecord = integratorDirect(sampler);
-        // outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
         float3 albedo = inAlbedoAlpha[int2(launchID)].xyz;
         //works for now, but terrible with reprojection errors
 
-        float3 outputColor = outputRecord.directLight + outputRecord.indirectLight;
-
+        float3 outputColor = 0.0;
+        IntegrationStepQueryRecord outputRecord = integratorDirect(sampler);
+        outputColor += outputRecord.directLight;
         
         //this works for now but is likley to break with slight reprojection errors.
         //in the end I have to make sure to seperate everything that gets multiplied with the albedo
@@ -181,8 +141,8 @@ void rgenMain()
         //maybe splitting between specular and diffuse also works. In that case the diffuse would still have to be devided,
         //by albedo. But indirect has less tendency to be large when albedo is small because indirect is already weighted with throughput 
         //not sure about the math it might actually be garanteed to not be large.
-        float3 lighting = outputColor / max(albedo,0.001);
-        outImage[int2(launchID)] = float4(lighting, 1.0);    
+        float3 lighting = outputColor / max(albedo, 0.001);
+        outImage[int2(launchID)] += float4(lighting, 1.0);    
     }
 }
 

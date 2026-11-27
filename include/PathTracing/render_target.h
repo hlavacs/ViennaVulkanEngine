@@ -64,6 +64,8 @@ namespace vve {
 		 * @param height New height in pixels.
 		 */
 		void recreateRenderTarget(uint32_t width, uint32_t height);
+
+		void recordClearRenderTarget(int currentFrame);
 		
 		/** @return Clear color value for the target. */
 		VkClearValue getClearColor();

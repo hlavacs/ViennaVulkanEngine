@@ -200,6 +200,9 @@ namespace vve {
          */
         void recreateImage(uint32_t width, uint32_t height);
 
+        void clearImage(VkCommandBuffer cmd);
+        void recordClearImage(int currentFrame);
+
         /** @return Vulkan image handle. */
         VkImage getImage();
         /** @return Vulkan image view handle. */

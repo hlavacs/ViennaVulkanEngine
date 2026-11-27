@@ -45,6 +45,70 @@ namespace vve {
         currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     }
 
+
+    void Image::clearImage(VkCommandBuffer cmd)
+    {
+
+        VkImageLayout finalLayout = currentLayout;
+
+        // Make sure this image supports transfer operations.
+        if (!(usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
+            throw std::runtime_error(
+                "Image must have VK_IMAGE_USAGE_TRANSFER_DST_BIT to be cleared!"
+            );
+        }
+
+        // This function is intended for color images.
+        if (!(aspectFlags & VK_IMAGE_ASPECT_COLOR_BIT)) {
+            throw std::runtime_error(
+                "clearImage() only supports color images!"
+            );
+        }
+
+        // A clear operation cannot finish in an undefined layout.
+        if (finalLayout == VK_IMAGE_LAYOUT_UNDEFINED ||
+            finalLayout == VK_IMAGE_LAYOUT_PREINITIALIZED) {
+            throw std::runtime_error("Invalid final image layout!");
+        }
+
+        // Transition to transfer destination layout.
+        transitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, cmd);
+
+        // All four color components are initialized to zero.
+        VkClearColorValue clearColor{};
+
+        // Define which parts of the image should be cleared.
+        VkImageSubresourceRange range{};
+        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        range.baseMipLevel = 0;
+        range.levelCount = 1;
+        range.baseArrayLayer = 0;
+        range.layerCount = 1;
+
+        // Clear the entire image.
+        vkCmdClearColorImage(
+            cmd,
+            image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            &clearColor,
+            1,
+            &range
+        );
+
+        // Transition to the layout required for subsequent operations.
+        if (finalLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+            transitionImageLayout(finalLayout, cmd);
+        }
+    }
+
+    void Image::recordClearImage(int currentFrame)
+    {
+        VkCommandBuffer cmd = commandManager->getCommandBuffer(currentFrame);
+
+        clearImage(cmd);
+    }
+
+
     Image::~Image() {
         if (imageView) vkDestroyImageView(device, imageView, nullptr);
         if (image) vkDestroyImage(device, image, nullptr);

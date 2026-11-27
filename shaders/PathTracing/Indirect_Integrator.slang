@@ -55,36 +55,6 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
     material.shadingFrame = Frame(shadingNormal);
 }
 
-//Direct Integrator
-IntegrationStepQueryRecord integratorDirect(inout Sampler sampler) {
-
-    int2 launchID = (int2)DispatchRaysIndex().xy;        // Current pixel (x,y)
-    int2 launchSize = (int2)DispatchRaysDimensions().xy; // Image size (width,height)
-
-    IntersectionRecord its;
-    MaterialRecord material;
-
-    getInitialSurfaceData(launchID,launchSize, its, material);
-
-    float3 radiance = float3(0.0);
-    float pdf = 1.0 / lightCount;
-    uint sampleCount = lightCount;
-
-    for(uint i = 0; i < lightCount; i++){
-        radiance += (groundTruthLightRadiance(i, its, material, sampler) / pdf);
-    }
-
-    IntegrationStepQueryRecord integrationStep;
-
-    integrationStep.directLight = radiance / (float)sampleCount;
-    integrationStep.indirectLight = float3(0.0);
-    integrationStep.throughput = float3(0.0);
-    //integrationStep.indirectRay = indirectRay;
-
-    return integrationStep;
-}
-
-
 IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
 
     int2 launchID = (int2)DispatchRaysIndex().xy;        // Current pixel (x,y)
@@ -191,14 +161,9 @@ void rgenMain()
 
         float3 outputColor = 0.0;
 
-        if (illuminationDomain == 0 || illuminationDomain == 1) {
-            IntegrationStepQueryRecord outputRecord = integratorDirect(sampler);
-            outputColor += outputRecord.directLight;
-        }
-        if (illuminationDomain == 0 || illuminationDomain == 2) {
-            IntegrationStepQueryRecord outputRecordIndirect = integratorIndirect(sampler);
-            outputColor += outputRecordIndirect.indirectLight;
-        }
+        IntegrationStepQueryRecord outputRecordIndirect = integratorIndirect(sampler);
+        outputColor += outputRecordIndirect.indirectLight;
+        
 
         
         //this works for now but is likley to break with slight reprojection errors.
@@ -209,7 +174,7 @@ void rgenMain()
         //by albedo. But indirect has less tendency to be large when albedo is small because indirect is already weighted with throughput 
         //not sure about the math it might actually be garanteed to not be large.
         float3 lighting = outputColor / max(albedo, 0.001);
-        outImage[int2(launchID)] = float4(lighting, 1.0);    
+        outImage[int2(launchID)] += float4(lighting, 1.0);    
     }
 }
 
